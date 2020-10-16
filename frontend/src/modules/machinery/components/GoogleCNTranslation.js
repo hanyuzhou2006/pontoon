@@ -6,11 +6,11 @@ import { Localized } from '@fluent/react';
 /**
  * Show the translation source from Google CN Translate.
  */
-export default function GoogleCNTranslation() {
+export default function GoogleCnTranslation() {
     return (
         <li>
             <Localized
-                id='machinery-GoogleCNTranslation--visit-google'
+                id='machinery-GoogleCnTranslation--visit-google'
                 attrs={{ title: true }}
             >
                 <a

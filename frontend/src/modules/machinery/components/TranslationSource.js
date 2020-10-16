@@ -12,7 +12,7 @@ import MicrosoftTerminology from './MicrosoftTerminology';
 import TransvisionMemory from './TransvisionMemory';
 import CaighdeanTranslation from './CaighdeanTranslation';
 import TranslationMemory from './TranslationMemory';
-import GoogleCNTranslation from './GoogleCNTranslation';
+import GoogleCnTranslation from './GoogleCnTranslation';
 
 type Props = {|
     translation: MachineryTranslation,
@@ -35,7 +35,7 @@ export default function TranslationSource({ translation, locale }: Props) {
             case 'google-translate':
                 return <GoogleTranslation key={index} />;
             case 'google-cn-translate':
-                return <GoogleCNTranslation key={index} />;    
+                return <GoogleCnTranslation key={index} />;    
             case 'microsoft-translator':
                 return <MicrosoftTranslation key={index} />;
             case 'systran-translate':

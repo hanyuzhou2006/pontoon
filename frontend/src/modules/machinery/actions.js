@@ -94,10 +94,10 @@ export function get(source: string, locale: Locale, pk: ?number): Function {
                 .getCaighdeanTranslation(source, locale, pk)
                 .then((results) => dispatch(addTranslations(results)));
         }
-        
-        if (locale.googleCNtranslateCode) {
+
+        if (locale.GoogleCnTranslateCode) {
             api.machinery
-            .getGoogleCNTranslation(source, locale)
+            .getGoogleCnTranslation(source, locale)
             .then((results) => dispatch(addTranslations(results)));
         }
         
