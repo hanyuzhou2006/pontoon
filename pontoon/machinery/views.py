@@ -399,7 +399,7 @@ def google_cn_translate(request):
         )
 
     # Validate if locale exists in the database to avoid any potential XSS attacks.
-    if not Locale.objects.filter(google_translate_code=locale_code).exists():
+    if not Locale.objects.filter(google_cn_translate_code=locale_code).exists():
         return JsonResponse(
             {
                 "status": False,
