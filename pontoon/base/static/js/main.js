@@ -708,7 +708,34 @@ var Pontoon = (function (my) {
           }
         }).error(error).complete(complete);
       }
+       // Google Cn Translate
+       if (
+        self.locale.google_cn_translate_code
+      ) {
+        requests++;
 
+        if (self.XHRgoogleCnTranslate) {
+          self.XHRgoogleCnTranslate.abort();
+        }
+
+        self.XHRgoogleCnTranslate = $.ajax({
+          url: '/google-cn-translate/',
+          data: {
+            text: original,
+            locale: self.locale.google_cn_translate_code
+          }
+        }).success(function(data) {
+          if (data.translation) {
+            append({
+              url: 'https://translate.google.cn/',
+              title: 'Visit Google Cn Translate',
+              source: 'Google Translate',
+              original: original,
+              translation: data.translation
+            });
+          }
+        }).error(error).complete(complete);
+      }
       self.NProgressBind();
     }
   });
