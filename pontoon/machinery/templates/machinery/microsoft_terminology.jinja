@@ -8,7 +8,7 @@
     <soap-env:Body>
         <ns0:GetTranslations xmlns:ns0="http://api.terminology.microsoft.com/terminology">
             <ns0:text>{{ text }}</ns0:text>
-            <ns0:from>en-US</ns0:from>
+            <ns0:from>{{ from }}</ns0:from>
             <ns0:to>{{ to }}</ns0:to>
             <ns0:sources>
                 <ns0:TranslationSource>Terms</ns0:TranslationSource>

@@ -3024,6 +3024,7 @@ class Translation(DirtyFieldsMixin, models.Model):
     SOURCE_TYPES = (
         ("translation-memory", "Translation Memory"),
         ("google-translate", "Google Translate"),
+        ("google-cn-translate", "Google CN Translate"),
         ("microsoft-translator", "Microsoft Translator"),
         ("systran-translate", "Systran Translate"),
         ("microsoft-terminology", "Microsoft"),

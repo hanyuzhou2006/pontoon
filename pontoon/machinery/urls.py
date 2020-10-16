@@ -43,4 +43,5 @@ urlpatterns = [
         name="pontoon.microsoft_terminology",
     ),
     url(r"^transvision/$", views.transvision, name="pontoon.transvision"),
+    url(r"^google-cn-translate/$", views.google_cn_translate, name="pontoon.google_cn_translate"),
 ]

@@ -5,6 +5,7 @@ import requests
 from collections import defaultdict
 
 from django.conf import settings
+from six.moves.urllib.parse import quote
 
 import pontoon.base as base
 
@@ -82,3 +83,32 @@ def get_translation_memory_data(text, locale, pk=None):
     return sorted(
         entries_merged.values(), key=lambda e: (e["quality"], e["count"]), reverse=True,
     )[:MAX_RESULTS]
+
+def get_google_cn_translate_data(text, locale_code):
+
+    source = 'zh-CN'
+    url = "https://translate.google.cn/translate_a/single?client=gtx&sl={source}&tl={to}&hl=zh-CN&dt=t&dt=bd&ie=UTF-8&oe=UTF-8&dj=1&source=icon&q={text}"\
+    .format_map({"source": source, "to": locale_code, "text": quote(text.encode("utf-8"))})
+
+    try:
+        r = requests.get(url)
+        root = json.loads(r.content)
+
+        if "sentences" not in root:
+            log.error("Google Translate error: {error}".format(error=root))
+            return {
+                "status": False,
+                "message": "Bad Request: {error}".format(error=root),
+            }
+
+        return {
+            "status": True,
+            "translations": root["sentences"],
+        }
+
+    except requests.exceptions.RequestException as e:
+        log.error("Google Translate error: {error}".format(error=e))
+        return {
+            "status": False,
+            "message": "Bad Request: {error}".format(error=e),
+        }

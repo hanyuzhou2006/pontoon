@@ -14,7 +14,7 @@ export const RESET: 'machinery/RESET' = 'machinery/RESET';
  */
 export type AddTranslationsAction = {
     +type: typeof ADD_TRANSLATIONS,
-    +translations: Array<MachineryTranslation>,
+    +translations: Array < MachineryTranslation >,
 };
 export function addTranslations(
     translations: Array<MachineryTranslation>,
@@ -31,7 +31,7 @@ export function addTranslations(
 export type ResetAction = {
     +type: typeof RESET,
     +entity: ?number,
-    +sourceString: string,
+        +sourceString: string,
 };
 export function reset(entity: ?number, sourceString: string): ResetAction {
     return {
@@ -94,6 +94,9 @@ export function get(source: string, locale: Locale, pk: ?number): Function {
                 .getCaighdeanTranslation(source, locale, pk)
                 .then((results) => dispatch(addTranslations(results)));
         }
+        api.machinery
+            .getGoogleTranslationFree(source, locale)
+            .then((results) => dispatch(addTranslations(results)));
     };
 }
 

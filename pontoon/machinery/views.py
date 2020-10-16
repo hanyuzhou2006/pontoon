@@ -21,6 +21,7 @@ from pontoon.base import utils
 from pontoon.base.models import Entity, Locale, Translation
 from pontoon.machinery.utils import (
     get_google_translate_data,
+    get_google_cn_translate_data,
     get_translation_memory_data,
 )
 
@@ -297,7 +298,8 @@ def microsoft_terminology(request):
     }
     payload = {
         "uuid": uuid4(),
-        "text": quote(text.encode("utf-8")),
+        "text": text,
+        "from": "zh-CN",
         "to": locale_code,
         "max_result": 5,
     }
@@ -306,7 +308,7 @@ def microsoft_terminology(request):
     payload = template.render(payload)
 
     try:
-        r = requests.post(url, data=payload, headers=headers)
+        r = requests.post(url, data=payload.encode('utf-8'), headers=headers)
         translations = []
         xpath = ".//{http://api.terminology.microsoft.com/terminology}"
         root = ET.fromstring(r.content)
@@ -383,3 +385,44 @@ def transvision(request):
             {"status": False, "message": "Bad Request: {error}".format(error=e)},
             status=400,
         )
+
+
+def google_cn_translate(request):
+    """Get translation from Google machine translation service."""
+    try:
+        text = request.GET["text"]
+        locale_code = request.GET["locale"]
+    except MultiValueDictKeyError as e:
+        return JsonResponse(
+            {"status": False, "message": "Bad Request: {error}".format(error=e)},
+            status=400,
+        )
+
+    # Validate if locale exists in the database to avoid any potential XSS attacks.
+    if not Locale.objects.filter(google_translate_code=locale_code).exists():
+        return JsonResponse(
+            {
+                "status": False,
+                "message": "Not Found: {error}".format(error=locale_code),
+            },
+            status=404,
+        )
+
+    data = get_google_cn_translate_data(text, locale_code)
+    obj = {}
+    translations = []
+    results = data["translations"]
+    if results is not None:
+         for translation in data["translations"]:
+                translations.append(
+                    {
+                        "source": translation["orig"],
+                        "target": translation["trans"],
+                        "quality": 200
+                       
+                    }
+                )
+
+    obj["translations"] = translations
+
+    return JsonResponse(obj)

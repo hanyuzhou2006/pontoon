@@ -129,6 +129,7 @@ export type OtherLocaleTranslation = {|
 export type SourceType =
     | 'translation-memory'
     | 'google-translate'
+    | 'google-cn-translate'
     | 'microsoft-translator'
     | 'systran-translate'
     | 'microsoft-terminology'
