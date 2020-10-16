@@ -12,7 +12,7 @@ import MicrosoftTerminology from './MicrosoftTerminology';
 import TransvisionMemory from './TransvisionMemory';
 import CaighdeanTranslation from './CaighdeanTranslation';
 import TranslationMemory from './TranslationMemory';
-import GoogleCnTranslation from './GoogleCnTranslation';
+import GoogleCnTranslation from './GoogleCNTranslation';
 
 type Props = {|
     translation: MachineryTranslation,
