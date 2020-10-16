@@ -12,7 +12,7 @@ describe('reducer', () => {
             direction: '',
             script: '',
             googleTranslateCode: '',
-            GoogleCnTranslateCode: '',
+            googleCnTranslateCode: '',
             msTranslatorCode: '',
             systranTranslateCode: '',
             msTerminologyCode: '',

@@ -95,7 +95,7 @@ export function get(source: string, locale: Locale, pk: ?number): Function {
                 .then((results) => dispatch(addTranslations(results)));
         }
 
-        if (locale.GoogleCnTranslateCode) {
+        if (locale.googleCnTranslateCode) {
             api.machinery
             .getGoogleCnTranslation(source, locale)
             .then((results) => dispatch(addTranslations(results)));

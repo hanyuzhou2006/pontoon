@@ -228,7 +228,7 @@ export default class MachineryAPI extends APIBase {
         const url = '/google-cn-translate/';
         const params = {
             text: source,
-            locale: locale.GoogleCnTranslateCode,
+            locale: locale.googleCnTranslateCode,
         };
 
         const results = await this._get(url, params);
