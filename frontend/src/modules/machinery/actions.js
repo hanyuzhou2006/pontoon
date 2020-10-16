@@ -94,9 +94,13 @@ export function get(source: string, locale: Locale, pk: ?number): Function {
                 .getCaighdeanTranslation(source, locale, pk)
                 .then((results) => dispatch(addTranslations(results)));
         }
-        api.machinery
+        
+        if (locale.googleCNtranslateCode) {
+            api.machinery
             .getGoogleCNTranslation(source, locale)
             .then((results) => dispatch(addTranslations(results)));
+        }
+        
     };
 }
 

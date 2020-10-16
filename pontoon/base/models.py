@@ -780,6 +780,7 @@ class Locale(AggregatedStats):
             "direction": self.direction,
             "script": self.script,
             "google_translate_code": self.google_translate_code,
+            "google_cn_translate_code": self.google_cn_translate_code,
             "ms_translator_code": self.ms_translator_code,
             "systran_translate_code": self.systran_translate_code,
             "ms_terminology_code": self.ms_terminology_code,
