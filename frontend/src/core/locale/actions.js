@@ -23,6 +23,7 @@ export type Locale = {|
     +direction: string,
     +script: string,
     +googleTranslateCode: string,
+    +googleCNTranslateCode: string,
     +msTranslatorCode: string,
     +systranTranslateCode: string,
     +msTerminologyCode: string,

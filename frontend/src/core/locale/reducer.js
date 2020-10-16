@@ -19,6 +19,7 @@ const initial: LocaleState = {
     direction: '',
     script: '',
     googleTranslateCode: '',
+    googleCNTranslateCode: '',
     msTranslatorCode: '',
     systranTranslateCode: '',
     msTerminologyCode: '',

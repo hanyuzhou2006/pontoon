@@ -221,14 +221,14 @@ export default class MachineryAPI extends APIBase {
         ];
     }
 
-    async getGoogleTranslationFree(
+    async getGoogleCNTranslation(
         source: string,
         locale: Locale,
     ): Promise<Translations> {
         const url = '/google-cn-translate/';
         const params = {
             text: source,
-            locale: googleTranslateCode,
+            locale: locale.googleCNTranslateCode,
         };
 
         const results = await this._get(url, params);
