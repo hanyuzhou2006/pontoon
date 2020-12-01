@@ -27,7 +27,7 @@ def get_google_translate_data(text, locale_code):
 
     payload = {
         "q": text,
-        "source": "en",
+        "source": "zh-CN",
         "target": locale_code,
         "format": "text",
         "key": api_key,
