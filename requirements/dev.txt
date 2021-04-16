@@ -23,8 +23,9 @@
 # requirements/default.txt contains all dependencies required to run python in the production environment.
 -r default.txt
 
-django-debug-toolbar==2.2 \
-    --hash=sha256:ff94725e7aae74b133d0599b9bf89bd4eb8f5d2c964106e61d11750228c8774c
+django-debug-toolbar==2.2.1 \
+    --hash=sha256:7feaee934608f5cdd95432154be832fe30fda6c1249018191e2c27bc0b6a965e \
+    --hash=sha256:7aadab5240796ffe8e93cc7dfbe2f87a204054746ff7ff93cd6d4a0c3747c853
 django-sslserver==0.19 \
     --hash=sha256:1363835229a0585f89c42f3beca836572f3f6babdc1508f13352aed84b0924b3
 dj.debug==0.0.2 \
