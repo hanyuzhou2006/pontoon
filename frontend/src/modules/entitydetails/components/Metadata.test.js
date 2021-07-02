@@ -21,9 +21,18 @@ const LOCALE = {
     cldrPlurals: [1, 3, 5],
 };
 
+const USER = {
+    user: 'A_Ludgate',
+};
+
 function createShallowMetadata(entity = ENTITY, pluralForm = -1) {
     return shallow(
-        <Metadata entity={entity} locale={LOCALE} pluralForm={pluralForm} />,
+        <Metadata
+            entity={entity}
+            locale={LOCALE}
+            pluralForm={pluralForm}
+            user={USER}
+        />,
     );
 }
 
@@ -92,7 +101,7 @@ describe('<Metadata>', () => {
         });
 
         const sourceContent = wrapper
-            .find('Property[title="Placeholder Examples"] Linkify')
+            .find('Property[title="PLACEHOLDER EXAMPLES"] Linkify')
             .props().children;
         expect(sourceContent).toContain('$ARG1$: example_1');
         expect(sourceContent).toContain('$ARG2$: example_2');

@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import json
 
 from django.contrib.auth.decorators import login_required
@@ -23,6 +21,7 @@ from pontoon.base.models import Locale, Project
 from pontoon.base.utils import require_AJAX
 from pontoon.contributors.utils import users_with_translations_counts
 from pontoon.contributors.views import ContributorsMixin
+from pontoon.insights.utils import get_insights
 from pontoon.teams.forms import LocaleRequestForm
 
 
@@ -99,6 +98,18 @@ def ajax_projects(request, locale):
 
 
 @require_AJAX
+def ajax_insights(request, locale):
+    """Insights tab."""
+    if not settings.ENABLE_INSIGHTS_TAB:
+        raise ImproperlyConfigured("ENABLE_INSIGHTS_TAB variable not set in settings.")
+
+    locale = get_object_or_404(Locale, code=locale)
+    insights = get_insights(Q(locale=locale))
+
+    return render(request, "teams/includes/insights.html", insights)
+
+
+@require_AJAX
 def ajax_info(request, locale):
     """Info tab."""
     locale = get_object_or_404(Locale, code=locale)
@@ -167,12 +178,12 @@ def ajax_permissions(request, locale):
         .order_by("email")
     )
 
-    contributors_emails = set(
+    contributors_emails = {
         contributor.email
         for contributor in users_with_translations_counts(
             None, Q(locale=locale) & Q(user__isnull=False), None
         )
-    )
+    }
 
     locale_projects = locale.projects_permissions(request.user)
 
@@ -214,9 +225,9 @@ def request_item(request, locale=None):
                 "Bad Request: Non-existent projects specified"
             )
 
-        projects = "".join("- {} ({})\n".format(p.name, p.slug) for p in project_list)
+        projects = "".join(f"- {p.name} ({p.slug})\n" for p in project_list)
 
-        mail_subject = u"Project request for {locale} ({code})".format(
+        mail_subject = "Project request for {locale} ({code})".format(
             locale=locale.name, code=locale.code
         )
 
@@ -240,7 +251,7 @@ def request_item(request, locale=None):
         code = form.cleaned_data["code"]
         name = form.cleaned_data["name"]
 
-        mail_subject = u"New team request: {locale} ({code})".format(
+        mail_subject = "New team request: {locale} ({code})".format(
             locale=name, code=code
         )
 
@@ -284,7 +295,7 @@ class LocaleContributorsView(ContributorsMixin, DetailView):
     template_name = "teams/includes/contributors.html"
     model = Locale
     slug_field = "code"
-    slug_url_kwarg = "code"
+    slug_url_kwarg = "locale"
 
     def get_context_object_name(self, obj):
         return "locale"

@@ -6,17 +6,26 @@
 # keep strings in order of appearance.
 
 
+## Pontoon Add-On promotion
+## Renders Pontoon Add-On promotion banner
+
+addonpromotion-AddonPromotion--dismiss = ×
+    .aria-label = Dismiss
+addonpromotion-AddonPromotion--get = Get Pontoon Add-On
+addonpromotion-AddonPromotion--text = Take your Pontoon notifications everywhere with the official Pontoon Add-on.
+
+
 ## ApproveAll
 ## Renders Approve All batch action button.
 
-batchactions-ApproveAll--default = Approve all
+batchactions-ApproveAll--default = APPROVE ALL
 batchactions-ApproveAll--success =
     { $changedCount ->
-        [one] { $changedCount } string approved
-       *[other] { $changedCount } strings approved
+        [one] { $changedCount } STRING APPROVED
+       *[other] { $changedCount } STRINGS APPROVED
     }
-batchactions-ApproveAll--invalid = { $invalidCount } failed
-batchactions-ApproveAll--error = Oops, something went wrong
+batchactions-ApproveAll--invalid = { $invalidCount } FAILED
+batchactions-ApproveAll--error = OOPS, SOMETHING WENT WRONG
 
 
 ## BatchActions
@@ -24,18 +33,18 @@ batchactions-ApproveAll--error = Oops, something went wrong
 
 batchactions-BatchActions--header-selected-count =
     { $count ->
-        [one] <glyph></glyph> <stress>{ $count }</stress> string selected
-       *[other] <glyph></glyph> <stress>{ $count }</stress> strings selected
+        [one] <glyph></glyph> <stress>{ $count }</stress> STRING SELECTED
+       *[other] <glyph></glyph> <stress>{ $count }</stress> STRINGS SELECTED
     }
     .title = Quit Batch Editing (Esc)
-batchactions-BatchActions--header-select-all = <glyph></glyph> Select All
+batchactions-BatchActions--header-select-all = <glyph></glyph> SELECT ALL
     .title = Select All Strings (Ctrl + Shift + A)
 
 batchactions-BatchActions--warning = <stress>Warning:</stress> These actions will be applied to all selected strings and cannot be undone.
 
-batchactions-BatchActions--review-heading = Review translations
+batchactions-BatchActions--review-heading = REVIEW TRANSLATIONS
 
-batchactions-BatchActions--find-replace-heading = Find & Replace in translations
+batchactions-BatchActions--find-replace-heading = FIND & REPLACE IN TRANSLATIONS
 batchactions-BatchActions--find =
     .placeholder = Find
 batchactions-BatchActions--replace-with =
@@ -45,44 +54,44 @@ batchactions-BatchActions--replace-with =
 ## RejectAll
 ## Renders Reject All batch action button.
 
-batchactions-RejectAll--default = Reject all suggestions
-batchactions-RejectAll--confirmation = Are you sure?
+batchactions-RejectAll--default = REJECT ALL SUGGESTIONS
+batchactions-RejectAll--confirmation = ARE YOU SURE?
 batchactions-RejectAll--success =
     { $changedCount ->
-        [one] { $changedCount } string rejected
-       *[other] { $changedCount } strings rejected
+        [one] { $changedCount } STRING REJECTED
+       *[other] { $changedCount } STRINGS REJECTED
     }
-batchactions-RejectAll--invalid = { $invalidCount } failed
-batchactions-RejectAll--error = Oops, something went wrong
+batchactions-RejectAll--invalid = { $invalidCount } FAILED
+batchactions-RejectAll--error = OOPS, SOMETHING WENT WRONG
 
 
 ## ReplaceAll
 ## Renders Replace All batch action button.
 
-batchactions-ReplaceAll--default = Replace all
+batchactions-ReplaceAll--default = REPLACE ALL
 batchactions-ReplaceAll--success =
     { $changedCount ->
-        [one] { $changedCount } string replaced
-       *[other] { $changedCount } strings replaced
+        [one] { $changedCount } STRING REPLACED
+       *[other] { $changedCount } STRINGS REPLACED
     }
-batchactions-ReplaceAll--invalid = { $invalidCount } failed
-batchactions-ReplaceAll--error = Oops, something went wrong
+batchactions-ReplaceAll--invalid = { $invalidCount } FAILED
+batchactions-ReplaceAll--error = OOPS, SOMETHING WENT WRONG
 
 
 ## ResourceProgress
 ##  Show a panel with progress chart and stats for the current resource.
 
-resourceprogress-ResourceProgress--all-strings = All strings
-resourceprogress-ResourceProgress--unreviewed = Unreviewed
-resourceprogress-ResourceProgress--translated = Translated
-resourceprogress-ResourceProgress--fuzzy = Fuzzy
-resourceprogress-ResourceProgress--warnings = Warnings
-resourceprogress-ResourceProgress--errors = Errors
-resourceprogress-ResourceProgress--missing = Missing
+resourceprogress-ResourceProgress--all-strings = ALL STRINGS
+resourceprogress-ResourceProgress--unreviewed = UNREVIEWED
+resourceprogress-ResourceProgress--translated = TRANSLATED
+resourceprogress-ResourceProgress--fuzzy = FUZZY
+resourceprogress-ResourceProgress--warnings = WARNINGS
+resourceprogress-ResourceProgress--errors = ERRORS
+resourceprogress-ResourceProgress--missing = MISSING
 
 
 ## Comments
-## Allows user to leave comments on translations
+## Allows user to leave comments on translations and source strings
 
 comments-AddComment--input =
     .placeholder = Write a comment…
@@ -94,6 +103,9 @@ comments-Comment--pin-button = PIN
     .title = Pin comment
 comments-Comment--unpin-button = UNPIN
     .title = Unpin comment
+comments-Comment--pinned = PINNED
+comments-CommentsList--pinned-comments = PINNED COMMENTS
+comments-CommentsList--all-comments = ALL COMMENTS
 
 
 ## Editor Menu
@@ -101,21 +113,21 @@ comments-Comment--unpin-button = UNPIN
 
 editor-EditorMenu--sign-in-to-translate = <a>Sign in</a> to translate.
 editor-EditorMenu--read-only-localization = This is a read-only localization.
-editor-EditorMenu--button-copy = Copy
+editor-EditorMenu--button-copy = COPY
     .title = Copy From Source (Ctrl + Shift + C)
-editor-EditorMenu--button-clear = Clear
+editor-EditorMenu--button-clear = CLEAR
     .title = Clear Translation (Ctrl + Shift + Backspace)
-editor-EditorMenu--button-approve = Approve
+editor-EditorMenu--button-approve = APPROVE
     .title = Approve Translation (Enter)
-editor-EditorMenu--button-approving = <glyph></glyph>Approving
+editor-EditorMenu--button-approving = <glyph></glyph>APPROVING
     .title = Approving Translation…
-editor-EditorMenu--button-save = Save
+editor-EditorMenu--button-save = SAVE
     .title = Save Translation (Enter)
-editor-EditorMenu--button-saving = <glyph></glyph>Saving
+editor-EditorMenu--button-saving = <glyph></glyph>SAVING
     .title = Saving Translation…
-editor-EditorMenu--button-suggest = Suggest
+editor-EditorMenu--button-suggest = SUGGEST
     .title = Suggest Translation (Enter)
-editor-EditorMenu--button-suggesting = <glyph></glyph>Suggesting
+editor-EditorMenu--button-suggesting = <glyph></glyph>SUGGESTING
     .title = Suggesting Translation…
 
 
@@ -136,10 +148,10 @@ editor-EditorSettings--change-all = Change All Settings
 
 editor-FailedChecks--close = ×
     .aria-label = Close failed checks popup
-editor-FailedChecks--title = The following checks have failed
-editor-FailedChecks--save-anyway = Save anyway
-editor-FailedChecks--suggest-anyway = Suggest anyway
-editor-FailedChecks--approve-anyway = Approve anyway
+editor-FailedChecks--title = THE FOLLOWING CHECKS HAVE FAILED
+editor-FailedChecks--save-anyway = SAVE ANYWAY 
+editor-FailedChecks--suggest-anyway = SUGGEST ANYWAY
+editor-FailedChecks--approve-anyway = APPROVE ANYWAY
 
 
 ## Editor Keyboard Shortcuts
@@ -148,7 +160,7 @@ editor-FailedChecks--approve-anyway = Approve anyway
 editor-KeyboardShortcuts--button =
     .title = Keyboard Shortcuts
 
-editor-KeyboardShortcuts--overlay-title = Keyboard Shortcuts
+editor-KeyboardShortcuts--overlay-title = KEYBOARD SHORTCUTS
 
 editor-KeyboardShortcuts--save-translation = Save Translation
 editor-KeyboardShortcuts--save-translation-shortcut = <accel>Enter</accel>
@@ -159,11 +171,11 @@ editor-KeyboardShortcuts--cancel-translation-shortcut = <accel>Esc</accel>
 editor-KeyboardShortcuts--insert-a-new-line = Insert A New Line
 editor-KeyboardShortcuts--insert-a-new-line-shortcut = <mod1>Shift</mod1> + <accel>Enter</accel>
 
-editor-KeyboardShortcuts--go-to-next-string = Go To Next String
-editor-KeyboardShortcuts--go-to-next-string-shortcut = <mod1>Alt</mod1> + <accel>Down</accel>
-
 editor-KeyboardShortcuts--go-to-previous-string = Go To Previous String
 editor-KeyboardShortcuts--go-to-previous-string-shortcut = <mod1>Alt</mod1> + <accel>Up</accel>
+
+editor-KeyboardShortcuts--go-to-next-string = Go To Next String
+editor-KeyboardShortcuts--go-to-next-string-shortcut = <mod1>Alt</mod1> + <accel>Down</accel>
 
 editor-KeyboardShortcuts--copy-from-source = Copy From Source
 editor-KeyboardShortcuts--copy-from-source-shortcut = <mod1>Ctrl</mod1> + <mod2>Shift</mod2> + <accel>C</accel>
@@ -177,72 +189,83 @@ editor-KeyboardShortcuts--search-strings-shortcut = <mod1>Ctrl</mod1> + <mod2>Sh
 editor-KeyboardShortcuts--select-all-strings = Select All Strings
 editor-KeyboardShortcuts--select-all-strings-shortcut = <mod1>Ctrl</mod1> + <mod2>Shift</mod2> + <accel>A</accel>
 
+editor-KeyboardShortcuts--copy-from-previous-helper = Copy From Previous Helper
+editor-KeyboardShortcuts--copy-from-previous-helper-shortcut = <mod1>Ctrl</mod1> + <mod2>Shift</mod2> + <accel>Up</accel>
+
+editor-KeyboardShortcuts--copy-from-next-helper = Copy From Next Helper
+editor-KeyboardShortcuts--copy-from-next-helper-shortcut = <mod1>Ctrl</mod1> + <mod2>Shift</mod2> + <accel>Down</accel>
+
 
 ## Editor Unsaved Changes
 ## Renders the unsaved changes popup
 
 editor-UnsavedChanges--close = ×
     .aria-label = Close unsaved changes popup
-editor-UnsavedChanges--title = You have unsaved changes
+editor-UnsavedChanges--title = YOU HAVE UNSAVED CHANGES
 editor-UnsavedChanges--body = Are you sure you want to proceed?
-editor-UnsavedChanges--proceed = Proceed
+editor-UnsavedChanges--proceed = PROCEED
 
 
 ## Entity Details Navigation
 ## Shows Copy Link and Next/Previous buttons.
 
-entitydetails-EntityNavigation--link = <glyph></glyph>Copy Link
+entitydetails-EntityNavigation--link = <glyph></glyph>COPY LINK
     .title = Copy Link to String
-entitydetails-EntityNavigation--next = <glyph></glyph>Next
+entitydetails-EntityNavigation--next = <glyph></glyph>NEXT
     .title = Go To Next String (Alt + Down)
-entitydetails-EntityNavigation--previous = <glyph></glyph>Previous
+entitydetails-EntityNavigation--previous = <glyph></glyph>PREVIOUS
     .title = Go To Previous String (Alt + Up)
 
 
 ## Entity Details Helpers
 ## Shows helper tabs
 
-entitydetails-Helpers--terms = Terms
+entitydetails-Helpers--terms = TERMS
 entitydetails-Helpers--no-terms = No terms available.
 
-entitydetails-Helpers--comments = Comments
+entitydetails-Helpers--comments = COMMENTS
 entitydetails-Helpers--no-comments = No comments available.
 
-entitydetails-Helpers--machinery = Machinery
-entitydetails-Helpers--locales = Locales
+entitydetails-Helpers--machinery = MACHINERY
+entitydetails-Helpers--locales = LOCALES
 
 ## Entity Details Metadata
 ## Shows metadata about an entity (original string)
 
 entitydetails-Metadata--comment =
-    .title = Comment
+    .title = COMMENT
 
 entitydetails-Metadata--group-comment =
-    .title = Group Comment
+    .title = GROUP COMMENT
 
 entitydetails-Metadata--resource-comment =
-    .title = Resource Comment
+    .title = RESOURCE COMMENT
 
 entitydetails-Metadata--pinned-comment =
-    .title = Pinned Comment
+    .title = PINNED COMMENT
 
 entitydetails-Metadata--see-more = See More
 
 entitydetails-Metadata--context =
-    .title = Context
+    .title = CONTEXT
 
 entitydetails-Metadata--placeholder =
-    .title = Placeholder Examples
+    .title = PLACEHOLDER EXAMPLES
 
 entitydetails-Metadata--resource =
-    .title = Resource
+    .title = RESOURCE
 
+
+## Entity Details ContextIssueButton
+## Shows the request context or report issue button
+
+entitydetails-ContextIssueButton--context-issue-button = REQUEST CONTEXT or REPORT ISSUE
 
 ## Entity Details GenericOriginalString
 ## Shows the original string of an entity
 
-entitydetails-GenericOriginalString--plural = Plural
-entitydetails-GenericOriginalString--singular = Singular
+entitydetails-GenericOriginalString--plural = PLURAL
+entitydetails-GenericOriginalString--singular = SINGULAR
 
 
 ## Rich editor
@@ -263,10 +286,8 @@ history-History--no-translations = No translations available.
 history-Translation--copy =
     .title = Copy Into Translation
 
-history-Translation--hide-diff = Hide diff
-    .title = Hide diff against the currently active translation
-history-Translation--show-diff = Show diff
-    .title = Show diff against the currently active translation
+history-Translation--toggle-diff = DIFF
+    .title = Toggle diff against the currently active translation
 
 history-Translation--button-delete =
     .title = Delete
@@ -295,12 +316,12 @@ history-Translation--button-not-rejected =
 history-Translation--button-rejected =
     .title = Rejected
 
-history-Translation--button-comment = Comment
+history-Translation--button-comment = COMMENT
     .title = Toggle translation comments
 
 history-Translation--button-comments = { $commentCount ->
-        [one] <stress>{ $commentCount }</stress> Comment
-       *[other] <stress>{ $commentCount }</stress> Comments
+        [one] <stress>{ $commentCount }</stress> COMMENT
+       *[other] <stress>{ $commentCount }</stress> COMMENTS
     }
     .title = Toggle translation comments
 
@@ -374,6 +395,19 @@ interactivetour-InteractiveTour--history-content =
     each entry indicate its review status (Approved, Rejected or
     Unreviewed).
 
+interactivetour-InteractiveTour--terms-title = Terms
+interactivetour-InteractiveTour--terms-content =
+    The Terms panel contains specialized words (terms) found in the
+    source string, along with their definitions, usage examples, part
+    of speech and translations. By clicking on a term, its translation
+    gets inserted into the editor.
+
+interactivetour-InteractiveTour--comments-title = Comments
+interactivetour-InteractiveTour--comments-content =
+    In the Comments tab you can discuss how to translate content with
+    your fellow team members. It’s also the place where you can request
+    more context about or report an issue in the source string.
+    
 interactivetour-InteractiveTour--machinery-title = Machinery
 interactivetour-InteractiveTour--machinery-content =
     The Machinery tab shows automated translation suggestions from
@@ -400,36 +434,42 @@ interactivetour-InteractiveTour--end-footer =
 ## Machinery
 ## Shows a list of translations from machines.
 machinery-Machinery--search-placeholder =
-    .placeholder = Search in Machinery
+    .placeholder = Concordance Search
+
+machinery-Machinery--load-more = LOAD MORE
 
 
 ## Machinery Caighdean Translation
 ## Shows the translation source from Caighdean Machine Translation.
-machinery-CaighdeanTranslation--visit-caighdean = Caighdean
+machinery-CaighdeanTranslation--visit-caighdean = CAIGHDEAN
     .title = Visit Caighdean Machine Translation
+
+## Machinery Concordance Search
+## Shows concordance search results from Pontoon's memory.
+machinery-ConcordanceSearch--translation-memory = TRANSLATION MEMORY
 
 
 ## Machinery Google Translation
 ## Shows the translation source from Google Translate.
-machinery-GoogleTranslation--visit-google = Google Translate
+machinery-GoogleTranslation--visit-google = GOOGLE TRANSLATE
     .title = Visit Google Translate
 
 
 ## Machinery Microsoft Translation
 ## Shows the translation source from Microsoft Translation.
-machinery-MicrosoftTranslation--visit-bing = Microsoft Translator
+machinery-MicrosoftTranslation--visit-bing = MICROSOFT TRANSLATOR
     .title = Visit Microsoft Translator
 
 
 ## Machinery Systran Translate
 ## Shows the translation source from Systran Translate.
-machinery-SystranTranslate--visit-systran = Systran Translate
+machinery-SystranTranslate--visit-systran = SYSTRAN TRANSLATE
     .title = Visit Systran Translate
 
 
 ## Machinery Microsoft Terminology
 ## Shows the translation source from Microsoft Terminology.
-machinery-MicrosoftTerminology--visit-microsoft = Microsoft
+machinery-MicrosoftTerminology--visit-microsoft = MICROSOFT
     .title =
         Visit Microsoft Terminology Service API.
         © 2018 Microsoft Corporation. All rights reserved.
@@ -438,22 +478,16 @@ machinery-MicrosoftTerminology--visit-microsoft = Microsoft
 ## Machinery Translation
 ## Shows a specific translation from machinery.
 machinery-Translation--copy =
-    .title = Copy Into Translation
+    .title = Copy Into Translation (Ctrl + Shift + Down)
 
 
 ## Machinery Translation Memory
 ## Shows the translation source from Pontoon's memory.
 machinery-TranslationMemory--pontoon-homepage =
     .title = Pontoon Homepage
-machinery-TranslationMemory--translation-memory = Translation memory
+machinery-TranslationMemory--translation-memory = TRANSLATION MEMORY
 machinery-TranslationMemory--number-occurrences =
     .title = Number of translation occurrences
-
-
-## Machinery Transvision Memory
-## Shows the translation source from Transvision.
-machinery-TransvisionMemory--visit-transvision = Mozilla
-    .title = Visit Transvision
 
 
 ## Notification Messages
@@ -484,7 +518,7 @@ notification--comment-added = Comment added
 ## Shows a specific translation from a different locale
 
 otherlocales-Translation--copy =
-    .title = Copy Into Translation
+    .title = Copy Into Translation (Ctrl + Shift + Down)
 
 otherlocales-Translation--header-link =
     .title = Open string in { $locale } ({ $code })
@@ -554,8 +588,8 @@ placeable-parser-xmlTag =
 ## Project menu
 ## Used in the project menu in the main navigation bar.
 project-ProjectMenu--no-results = No results
-project-ProjectMenu--project = Project
-project-ProjectMenu--progress = Progress
+project-ProjectMenu--project = PROJECT
+project-ProjectMenu--progress = PROGRESS
 project-ProjectMenu--all-projects = All Projects
 project-ProjectMenu--search-placeholder =
     .placeholder = Filter projects
@@ -564,8 +598,8 @@ project-ProjectMenu--search-placeholder =
 ## Resource menu
 ## Used in the resource menu in the main navigation bar.
 resource-ResourceMenu--no-results = No results
-resource-ResourceMenu--resource = Resource
-resource-ResourceMenu--progress = Progress
+resource-ResourceMenu--resource = RESOURCE
+resource-ResourceMenu--progress = PROGRESS
 resource-ResourceMenu--all-resources = All Resources
 resource-ResourceMenu--all-projects = All Projects
 resource-ResourceMenu--search-placeholder =
@@ -574,10 +608,10 @@ resource-ResourceMenu--search-placeholder =
 
 ## Filters Panel
 ## Shows a list of filters, used to filter the list of entities.
-search-FiltersPanel--heading-status = Translation Status
-search-FiltersPanel--heading-tags = Tags
-search-FiltersPanel--heading-extra = Extra Filters
-search-FiltersPanel--heading-authors = Translation Authors
+search-FiltersPanel--heading-status = TRANSLATION STATUS
+search-FiltersPanel--heading-tags = TAGS
+search-FiltersPanel--heading-extra = EXTRA FILTERS
+search-FiltersPanel--heading-authors = TRANSLATION AUTHORS
 search-FiltersPanel--status-name-all = All
 search-FiltersPanel--status-name-translated = Translated
 search-FiltersPanel--status-name-fuzzy = Fuzzy
@@ -589,13 +623,13 @@ search-FiltersPanel--extra-name-unchanged = Unchanged
 search-FiltersPanel--extra-name-empty = Empty
 search-FiltersPanel--extra-name-rejected = Rejected
 
-search-FiltersPanel--clear-selection = <glyph></glyph>Clear
+search-FiltersPanel--clear-selection = <glyph></glyph>CLEAR
     .title = Uncheck selected filters
 
 search-FiltersPanel--apply-filters =
-    <glyph></glyph>Apply <stress>{ $count }</stress> { $count ->
-        [one] filter
-       *[other] filters
+    <glyph></glyph>APPLY <stress>{ $count }</stress> { $count ->
+        [one] FILTER
+       *[other] FILTERS
     }
     .title = Apply Selected Filters
 
@@ -603,15 +637,18 @@ search-FiltersPanel--apply-filters =
 ## Time Range Filter
 ## Time Range filter title, input fields and chart.
 
-search-TimeRangeFilter--heading-time = Translation Time
-search-TimeRangeFilter--edit-range = <glyph></glyph>Edit Range
-search-TimeRangeFilter--save-range = Save Range
+search-TimeRangeFilter--heading-time = TRANSLATION TIME
+search-TimeRangeFilter--edit-range = <glyph></glyph>EDIT RANGE
+search-TimeRangeFilter--save-range = SAVE RANGE
 
 
 ## Term
 ## Shows term entry with its metadata
 
-term-Term--for-example = E.g.
+term-Term--copy = 
+    .title = Copy Into Translation
+
+term-Term--for-example = E.G.
 
 
 ## User Avatar
@@ -655,4 +692,4 @@ user-UserNotificationsMenu--see-all-notifications = See all Notifications
 ## Project Info
 ## Shows information of all projects
 
-projectinfo-ProjectInfo--project-info-title = Project Info
+projectinfo-ProjectInfo--project-info-title = PROJECT INFO

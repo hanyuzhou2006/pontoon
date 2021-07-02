@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import datetime
 
 from django.contrib.auth.models import User
@@ -18,7 +16,7 @@ class Command(BaseCommand):
         are due in 7 days. If 2 days before the deadline project still isn't
         complete for the contributor's locale, notifications are sent again.
 
-        Command is designed to run on a daily basis.
+        The command is designed to run daily.
         """
         for project in Project.objects.available():
             if project.deadline:
@@ -28,11 +26,9 @@ class Command(BaseCommand):
             else:
                 continue
 
-            self.stdout.write(
-                "Sending deadline notifications for project {}.".format(project)
-            )
+            self.stdout.write(f"Sending deadline notifications for project {project}.")
 
-            verb = "due in {} days".format(days_left)
+            verb = f"due in {days_left} days"
             locales = []
 
             for project_locale in project.project_locale.all():
@@ -51,6 +47,4 @@ class Command(BaseCommand):
             for contributor in contributors:
                 notify.send(project, recipient=contributor, verb=verb)
 
-            self.stdout.write(
-                "Deadline notifications for project {} sent.".format(project)
-            )
+            self.stdout.write(f"Deadline notifications for project {project} sent.")

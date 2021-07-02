@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from django.utils import timezone
 
 from pontoon.actionlog.models import ActionLog
@@ -68,7 +66,11 @@ def approve_translations(form, user, translations, locale):
 
     # Log approving actions
     actions_to_log = [
-        ActionLog(action_type="translation:approved", performed_by=user, translation=t,)
+        ActionLog(
+            action_type=ActionLog.ActionType.TRANSLATION_APPROVED,
+            performed_by=user,
+            translation=t,
+        )
         for t in translations
     ]
     ActionLog.objects.bulk_create(actions_to_log)
@@ -117,7 +119,11 @@ def reject_translations(form, user, translations, locale):
 
     # Log rejecting actions
     actions_to_log = [
-        ActionLog(action_type="translation:rejected", performed_by=user, translation=t,)
+        ActionLog(
+            action_type=ActionLog.ActionType.TRANSLATION_REJECTED,
+            performed_by=user,
+            translation=t,
+        )
         for t in translations
     ]
     ActionLog.objects.bulk_create(actions_to_log)
@@ -169,7 +175,11 @@ def replace_translations(form, user, translations, locale):
 
     # Log rejecting actions
     actions_to_log = [
-        ActionLog(action_type="translation:rejected", performed_by=user, translation=t,)
+        ActionLog(
+            action_type=ActionLog.ActionType.TRANSLATION_REJECTED,
+            performed_by=user,
+            translation=t,
+        )
         for t in old_translations
     ]
     ActionLog.objects.bulk_create(actions_to_log)
@@ -191,7 +201,11 @@ def replace_translations(form, user, translations, locale):
 
     # Log creating actions
     actions_to_log = [
-        ActionLog(action_type="translation:created", performed_by=user, translation=t,)
+        ActionLog(
+            action_type=ActionLog.ActionType.TRANSLATION_CREATED,
+            performed_by=user,
+            translation=t,
+        )
         for t in changed_translations
     ]
     ActionLog.objects.bulk_create(actions_to_log)

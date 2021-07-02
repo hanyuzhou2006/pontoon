@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from translate.filters import checks
 from translate.lang import data as lang_data
 from translate.storage import base as storage_base
@@ -7,8 +5,8 @@ from translate.storage import base as storage_base
 
 def run_checks(original, string, locale_code, disabled_checks=None):
     """Check for obvious errors like blanks and missing interpunction."""
-    original = lang_data.normalized_unicode(original)
-    string = lang_data.normalized_unicode(string)
+    original = lang_data.normalize(original)
+    string = lang_data.normalize(string)
     disabled_checks = disabled_checks or []
 
     unit = storage_base.TranslationUnit(original)

@@ -1,12 +1,10 @@
 # The classes here provide similar functionality to
 # ProjectLocale.get_latest_activity in mangling latest activity data,
 # although they use queryset `values` rather than objects
-from __future__ import absolute_import
-
 from pontoon.base.models import user_gravatar_url
 
 
-class LatestActivityUser(object):
+class LatestActivityUser:
     def __init__(self, activity, activity_type):
         self.activity = activity
         self.type = activity_type
@@ -40,7 +38,7 @@ class LatestActivityUser(object):
             return user_gravatar_url(self, *args)
 
 
-class LatestActivity(object):
+class LatestActivity:
     def __init__(self, activity):
         self.activity = activity
 

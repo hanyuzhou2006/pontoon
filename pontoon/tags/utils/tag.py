@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from django.utils.functional import cached_property
 
 from .tagged import Tagged, TaggedLocale
@@ -19,7 +17,7 @@ class TagTool(Tagged):
         self.priority = kwargs.pop("priority")
         self.slug = kwargs.pop("slug")
         self.project = kwargs.pop("project")
-        super(TagTool, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     @property
     def linkable_resources(self):

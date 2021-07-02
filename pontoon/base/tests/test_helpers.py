@@ -1,12 +1,8 @@
-# coding: utf-8
-from __future__ import absolute_import
-
 from collections import OrderedDict
 
 import pytest
 
 from datetime import timedelta
-from six import text_type
 
 from pontoon.base.templatetags.helpers import (
     as_simple_translation,
@@ -90,7 +86,7 @@ def test_helper_to_json():
         "a": "foo",
         "b": aware_datetime(2015, 1, 1),
     }
-    string = '{"a": "foo", "b": "2015-01-01T00:00:00+00:00"}'
+    string = '{"a": "foo", "b": "2015-01-01T00:00:00Z"}'
     assert to_json(obj) == string
 
 
@@ -144,7 +140,7 @@ def test_helper_base_format_timedelta_0(settings):
 
 
 def test_helper_base_nospam_unicode(settings):
-    assert text_type(nospam(u"<łążźćń>")) == u"&lt;łążźćń&gt;"
+    assert str(nospam("<łążźćń>")) == "&lt;łążźćń&gt;"
 
 
 def test_helper_base_nospam_escape(settings):

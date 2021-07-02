@@ -1,8 +1,6 @@
-from __future__ import absolute_import
+from unittest.mock import patch
 
 import pytest
-
-from mock import patch
 
 from pontoon.base.models import ProjectLocale
 from pontoon.test.factories import (

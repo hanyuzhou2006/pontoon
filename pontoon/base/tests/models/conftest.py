@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import pytest
 
 from pontoon.test.factories import (
@@ -9,12 +7,6 @@ from pontoon.test.factories import (
     ResourceFactory,
     TranslatedResourceFactory,
 )
-
-
-@pytest.fixture
-def repo_file(project_a):
-    """Repo (file) 0"""
-    return RepositoryFactory.create(type="file", project=project_a, url="repo_file0",)
 
 
 @pytest.fixture

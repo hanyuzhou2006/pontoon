@@ -1,10 +1,7 @@
-from __future__ import absolute_import
-
 import json
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
-
-from mock import MagicMock, PropertyMock, patch
 
 from django.http import Http404
 

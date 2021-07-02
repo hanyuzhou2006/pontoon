@@ -1,8 +1,6 @@
-from __future__ import absolute_import
+from unittest.mock import MagicMock
 
 import pytest
-
-from mock import MagicMock
 
 from allauth.socialaccount.models import SocialAccount, SocialLogin
 

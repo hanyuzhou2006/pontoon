@@ -1,81 +1,75 @@
-from __future__ import absolute_import
+from unittest.mock import patch
 
+import pytest
 from django.http import HttpResponse
 from django.shortcuts import render
 
-from mock import patch
-
-from pontoon.base.tests import (
-    ProjectFactory,
-    ResourceFactory,
-    TranslationFactory,
-)
-
-from pontoon.base.tests.test_views import ViewTestCase
+from pontoon.base.tests import TranslationFactory
 
 
-class ProjectTests(ViewTestCase):
-    def test_project_doesnt_exist(self):
-        """
-        Checks if view is returning error when project slug is invalid.
-        """
-        response = self.client.get("/projects/project_doesnt_exist/")
-        assert response.status_code == 404
-
-    def test_project_view(self):
-        """
-        Checks if project page is returned properly.
-        """
-        project = ProjectFactory.create(visibility="public")
-        ResourceFactory.create(project=project)
-
-        with patch("pontoon.projects.views.render", wraps=render) as mock_render:
-            self.client.get("/projects/{}/".format(project.slug))
-            assert mock_render.call_args[0][2]["project"] == project
+@pytest.mark.no_cover
+@pytest.mark.django_db
+def test_projects_list(client, project_a, resource_a):
+    """
+    Checks if list of projects is properly rendered.
+    """
+    response = client.get("/projects/")
+    assert response.status_code == 200
+    assert response.resolver_match.view_name == "pontoon.projects"
 
 
-class ProjectContributorsTests(ViewTestCase):
-    def test_project_doesnt_exist(self):
-        """
-        Checks if view handles invalid project.
-        """
-        response = self.client.get("/projects/project_doesnt_exist/contributors/")
-        assert response.status_code == 404
+@pytest.mark.django_db
+def test_project_doesnt_exist(client):
+    """
+    Checks if view is returning error when project slug is invalid.
+    """
+    response = client.get("/projects/project_doesnt_exist/")
+    assert response.status_code == 404
+    response = client.get("/projects/project_doesnt_exist/contributors/")
+    assert response.status_code == 404
 
-    def test_project_top_contributors(self):
-        """
-        Tests if view returns top contributors specific for given project.
-        """
-        first_project = ProjectFactory.create(visibility="public")
-        ResourceFactory.create(project=first_project)
-        first_project_contributor = TranslationFactory.create(
-            entity__resource__project=first_project
-        ).user
 
-        second_project = ProjectFactory.create(visibility="public")
-        ResourceFactory.create(project=second_project)
-        second_project_contributor = TranslationFactory.create(
-            entity__resource__project=second_project
-        ).user
+@pytest.mark.django_db
+def test_project_view(client, project_a, resource_a):
+    """
+    Checks if project page is returned properly.
+    """
+    with patch("pontoon.projects.views.render", wraps=render) as mock_render:
+        client.get(f"/projects/{project_a.slug}/")
+        assert mock_render.call_args[0][2]["project"] == project_a
 
-        with patch(
-            "pontoon.projects.views.ProjectContributorsView.render_to_response",
-            return_value=HttpResponse(""),
-        ) as mock_render:
-            self.client.get(
-                "/projects/{}/ajax/contributors/".format(first_project.slug),
-                HTTP_X_REQUESTED_WITH="XMLHttpRequest",
-            )
-            assert mock_render.call_args[0][0]["project"] == first_project
-            assert list(mock_render.call_args[0][0]["contributors"]) == [
-                first_project_contributor
-            ]
 
-            self.client.get(
-                "/projects/{}/ajax/contributors/".format(second_project.slug),
-                HTTP_X_REQUESTED_WITH="XMLHttpRequest",
-            )
-            assert mock_render.call_args[0][0]["project"] == second_project
-            assert list(mock_render.call_args[0][0]["contributors"]) == [
-                second_project_contributor
-            ]
+@pytest.mark.django_db
+def test_project_top_contributors(client, project_a, project_b):
+    """
+    Tests if view returns top contributors specific for given project.
+    """
+    project_a_contributor = TranslationFactory.create(
+        entity__resource__project=project_a
+    ).user
+
+    project_b_contributor = TranslationFactory.create(
+        entity__resource__project=project_b
+    ).user
+
+    with patch(
+        "pontoon.projects.views.ProjectContributorsView.render_to_response",
+        return_value=HttpResponse(""),
+    ) as mock_render:
+        client.get(
+            f"/projects/{project_a.slug}/ajax/contributors/",
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        assert mock_render.call_args[0][0]["project"] == project_a
+        assert list(mock_render.call_args[0][0]["contributors"]) == [
+            project_a_contributor
+        ]
+
+        client.get(
+            f"/projects/{project_b.slug}/ajax/contributors/",
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        assert mock_render.call_args[0][0]["project"] == project_b
+        assert list(mock_render.call_args[0][0]["contributors"]) == [
+            project_b_contributor
+        ]

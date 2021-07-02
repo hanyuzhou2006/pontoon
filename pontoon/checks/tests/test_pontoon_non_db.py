@@ -1,8 +1,6 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
-import pytest
+from unittest.mock import MagicMock
 
-from mock import MagicMock
+import pytest
 
 from pontoon.checks.libraries.pontoon_non_db import run_checks
 
@@ -31,4 +29,4 @@ def test_empty_translations(get_entity_mock):
     """
     assert run_checks(
         get_entity_mock("properties", allows_empty_translations=True), ""
-    ) == {"pndbWarnings": [u"Empty translation"]}
+    ) == {"pndbWarnings": ["Empty translation"]}

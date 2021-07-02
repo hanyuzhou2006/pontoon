@@ -1,10 +1,8 @@
-from __future__ import absolute_import
-
 from .latest_activity import LatestActivity
 from .chart import TagChart
 
 
-class Tagged(object):
+class Tagged:
     """Base class for wrapping `values` dictionaries of related
     tag information
     """

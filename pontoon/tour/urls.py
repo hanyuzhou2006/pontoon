@@ -1,12 +1,10 @@
-from __future__ import absolute_import
-
-from django.conf.urls import url
+from django.urls import path
 
 from . import views
 
 urlpatterns = [
-    url(
-        r"^update-tour-status/",
+    path(
+        "update-tour-status/",
         views.update_tour_status,
         name="pontoon.update_tour_status",
     ),

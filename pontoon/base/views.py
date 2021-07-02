@@ -1,8 +1,9 @@
-from __future__ import absolute_import
-
 import logging
 import re
+
+from collections import defaultdict
 from datetime import datetime
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.contrib import messages
@@ -27,8 +28,8 @@ from django.views.decorators.http import condition, require_POST
 from django.views.generic.edit import FormView
 
 from notifications.signals import notify
-from six.moves.urllib.parse import urlparse
 
+from pontoon.actionlog.models import ActionLog
 from pontoon.actionlog.utils import log_action
 from pontoon.base import forms
 from pontoon.base import utils
@@ -75,7 +76,7 @@ def translate_locale_agnostic(request, slug, part):
                 "pontoon.translate",
                 kwargs=dict(project=slug, locale=locale, resource=part),
             )
-            return redirect("%s%s" % (path, query))
+            return redirect(f"{path}{query}")
 
     locale = utils.get_project_locale_from_request(request, project_locales)
     path = (
@@ -85,7 +86,7 @@ def translate_locale_agnostic(request, slug, part):
         if locale
         else reverse("pontoon.projects.project", kwargs=dict(slug=slug))
     )
-    return redirect("%s%s" % (path, query))
+    return redirect(f"{path}{query}")
 
 
 @utils.require_AJAX
@@ -110,16 +111,14 @@ def locale_project_parts(request, locale, slug):
         locale = Locale.objects.get(code=locale)
     except Locale.DoesNotExist as e:
         return JsonResponse(
-            {"status": False, "message": "Not Found: {error}".format(error=e)},
-            status=404,
+            {"status": False, "message": f"Not Found: {e}"}, status=404,
         )
 
     try:
         project = Project.objects.visible_for(request.user).get(slug=slug)
     except Project.DoesNotExist as e:
         return JsonResponse(
-            {"status": False, "message": "Not Found: {error}".format(error=e)},
-            status=404,
+            {"status": False, "message": f"Not Found: {e}"}, status=404,
         )
 
     try:
@@ -293,9 +292,7 @@ def entities(request):
     try:
         entities = Entity.for_project_locale(request.user, project, locale, **form_data)
     except ValueError as error:
-        return JsonResponse(
-            {"status": False, "message": "{error}".format(error=error)}, status=500
-        )
+        return JsonResponse({"status": False, "message": f"{error}"}, status=500)
 
     # Only return a list of entity PKs (batch editing: select all)
     if form.cleaned_data["pk_only"]:
@@ -313,41 +310,33 @@ def entities(request):
     )
 
 
-def _serialize_translation_values(query):
-    translations = query.values(
-        "locale__pk",
-        "locale__code",
-        "locale__name",
-        "locale__direction",
-        "locale__script",
-        "string",
-    )
+def _serialize_translation_values(translation, preferred_values):
+    serialized = {
+        "locale": {
+            "pk": translation["locale__pk"],
+            "code": translation["locale__code"],
+            "name": translation["locale__name"],
+            "direction": translation["locale__direction"],
+            "script": translation["locale__script"],
+        },
+        "translation": translation["string"],
+    }
 
-    return [
-        {
-            "locale": {
-                "pk": translation["locale__pk"],
-                "code": translation["locale__code"],
-                "name": translation["locale__name"],
-                "direction": translation["locale__direction"],
-                "script": translation["locale__script"],
-            },
-            "translation": translation["string"],
-        }
-        for translation in translations
-    ]
+    if translation["locale__code"] in preferred_values:
+        serialized["is_preferred"] = True
+
+    return serialized
 
 
 @utils.require_AJAX
 def get_translations_from_other_locales(request):
     """Get entity translations for all but specified locale."""
     try:
-        entity = request.GET["entity"]
+        entity = int(request.GET["entity"])
         locale = request.GET["locale"]
-    except MultiValueDictKeyError as e:
+    except (MultiValueDictKeyError, ValueError) as e:
         return JsonResponse(
-            {"status": False, "message": "Bad Request: {error}".format(error=e)},
-            status=400,
+            {"status": False, "message": f"Bad Request: {e}"}, status=400,
         )
 
     entity = get_object_or_404(Entity, pk=entity)
@@ -360,37 +349,25 @@ def get_translations_from_other_locales(request):
         )
         .exclude(locale=locale)
         .order_by("locale__name")
+    ).values(
+        "locale__pk",
+        "locale__code",
+        "locale__name",
+        "locale__direction",
+        "locale__script",
+        "string",
     )
 
+    preferred_locales = []
     if request.user.is_authenticated:
-        preferred_locales = request.user.profile.preferred_locales
-        preferred = translations.filter(locale__in=preferred_locales)
-        other = translations.exclude(locale__in=preferred_locales)
-
-        preferred_translations = sorted(
-            _serialize_translation_values(preferred),
-            key=lambda t: request.user.profile.locales_order.index(t["locale"]["pk"]),
+        preferred_locales = request.user.profile.preferred_locales.values_list(
+            "code", flat=True
         )
 
-        if request.user.profile.preferred_source_locale:
-            # TODO: De-hardcode as part of bug 1328879.
-            preferred_translations.insert(
-                0,
-                {
-                    "locale": Locale.objects.get(code="en-US").serialize(),
-                    "translation": entity.string,
-                },
-            )
-    else:
-        other = translations
-        preferred_translations = []
-
-    other_translations = _serialize_translation_values(other)
-
-    payload = {
-        "preferred": preferred_translations,
-        "other": other_translations,
-    }
+    payload = [
+        _serialize_translation_values(translation, preferred_locales)
+        for translation in translations
+    ]
 
     return JsonResponse(payload, safe=False)
 
@@ -399,13 +376,12 @@ def get_translations_from_other_locales(request):
 def get_translation_history(request):
     """Get history of translations of given entity to given locale."""
     try:
-        entity = request.GET["entity"]
+        entity = int(request.GET["entity"])
         locale = request.GET["locale"]
-        plural_form = request.GET["plural_form"]
-    except MultiValueDictKeyError as e:
+        plural_form = int(request.GET["plural_form"])
+    except (MultiValueDictKeyError, ValueError) as e:
         return JsonResponse(
-            {"status": False, "message": "Bad Request: {error}".format(error=e)},
-            status=400,
+            {"status": False, "message": f"Bad Request: {e}"}, status=400,
         )
 
     entity = get_object_or_404(Entity, pk=entity)
@@ -415,7 +391,7 @@ def get_translation_history(request):
         entity=entity, locale=locale,
     ).prefetch_related("comments")
 
-    if plural_form != "-1":
+    if plural_form != -1:
         translations = translations.filter(plural_form=plural_form)
     translations = translations.order_by("-active", "rejected", "-date")
 
@@ -447,18 +423,19 @@ def get_translation_history(request):
 def get_team_comments(request):
     """Get team comments for given locale."""
     try:
-        entity = request.GET["entity"]
+        entity = int(request.GET["entity"])
         locale = request.GET["locale"]
-    except MultiValueDictKeyError as e:
+    except (MultiValueDictKeyError, ValueError) as e:
         return JsonResponse(
-            {"status": False, "message": "Bad Request: {error}".format(error=e)},
-            status=400,
+            {"status": False, "message": f"Bad Request: {e}"}, status=400,
         )
 
     entity = get_object_or_404(Entity, pk=entity)
     locale = get_object_or_404(Locale, code=locale)
-    comments = Comment.objects.filter(entity=entity, locale=locale).order_by(
-        "timestamp"
+    comments = (
+        Comment.objects.filter(entity=entity)
+        .filter(Q(locale=locale) | Q(pinned=True))
+        .order_by("timestamp")
     )
 
     payload = [c.serialize() for c in comments]
@@ -557,6 +534,40 @@ def _send_add_comment_notifications(user, comment, entity, locale, translation):
         )
 
 
+def _send_pin_comment_notifications(user, comment):
+    # When pinning a comment, notify:
+    #   - authors of existing translations across all locales
+    #   - reviewers of existing translations across all locales
+    recipient_data = defaultdict(list)
+    entity = comment.entity
+    translations = Translation.objects.filter(entity=entity)
+
+    for t in translations:
+        for u in (
+            t.user,
+            t.approved_user,
+            t.unapproved_user,
+            t.rejected_user,
+            t.unrejected_user,
+        ):
+            if u:
+                recipient_data[u.pk].append(t.locale.pk)
+
+    for recipient in User.objects.filter(pk__in=recipient_data.keys()).exclude(
+        pk=user.pk
+    ):
+        # Send separate notification for each locale (which results in links to corresponding translate views)
+        for locale in Locale.objects.filter(pk__in=recipient_data[recipient.pk]):
+            notify.send(
+                user,
+                recipient=recipient,
+                verb="has pinned a comment in",
+                action_object=locale,
+                target=entity,
+                description=comment.content,
+            )
+
+
 @require_POST
 @utils.require_AJAX
 @login_required(redirect_field_name="", login_url="/403")
@@ -589,12 +600,14 @@ def add_comment(request):
     # Translation comment
     if translation:
         c = Comment(author=user, translation=translation, content=comment)
-        log_action("comment:added", user, translation=translation)
+        log_action(ActionLog.ActionType.COMMENT_ADDED, user, translation=translation)
 
     # Team comment
     else:
         c = Comment(author=user, entity=entity, locale=locale, content=comment)
-        log_action("comment:added", user, entity=entity, locale=locale)
+        log_action(
+            ActionLog.ActionType.COMMENT_ADDED, user, entity=entity, locale=locale
+        )
 
     c.save()
 
@@ -616,6 +629,8 @@ def pin_comment(request):
 
     comment.pinned = True
     comment.save()
+
+    _send_pin_comment_notifications(request.user, comment)
 
     return JsonResponse({"status": True})
 
@@ -641,16 +656,21 @@ def unpin_comment(request):
 @login_required(redirect_field_name="", login_url="/403")
 def get_users(request):
     """Get all users."""
-    users = User.objects.all()
+    users = (
+        User.objects
+        # Exclude system users
+        .exclude(email__regex=r"^pontoon-(\w+)@example.com$")
+        # Exclude deleted users
+        .exclude(email__regex=r"^deleted-user-(\w+)@example.com$")
+    )
     payload = []
 
     for u in users:
         payload.append(
             {
                 "gravatar": u.gravatar_url(44),
-                "name": u.first_name or u.email,
+                "name": u.name_or_email,
                 "url": u.profile_url,
-                "display": u.name_or_email,
             }
         )
 
@@ -668,16 +688,14 @@ def perform_checks(request):
         ignore_warnings = request.POST.get("ignore_warnings", "false") == "true"
     except MultiValueDictKeyError as e:
         return JsonResponse(
-            {"status": False, "message": "Bad Request: {error}".format(error=e)},
-            status=400,
+            {"status": False, "message": f"Bad Request: {e}"}, status=400,
         )
 
     try:
         entity = Entity.objects.get(pk=entity)
     except Entity.DoesNotExist as e:
         return JsonResponse(
-            {"status": False, "message": "Bad Request: {error}".format(error=e)},
-            status=400,
+            {"status": False, "message": f"Bad Request: {e}"}, status=400,
         )
 
     failed_checks = run_checks(
@@ -772,7 +790,7 @@ def download_translation_memory(request, locale, slug):
         .exclude(Q(source="") | Q(target=""))
         .exclude(translation__approved=False, translation__fuzzy=False)
     )
-    filename = "{code}.{slug}.tmx".format(code=locale.code, slug=slug)
+    filename = f"{locale.code}.{slug}.tmx"
 
     response = StreamingHttpResponse(
         utils.build_translation_memory_file(
@@ -783,7 +801,6 @@ def download_translation_memory(request, locale, slug):
                 "entity__key",
                 "source",
                 "target",
-                "project__name",
                 "project__slug",
             ).order_by("project__slug", "source"),
         ),
@@ -833,6 +850,7 @@ def user_data(request):
                 "force_suggestions": user.profile.force_suggestions,
             },
             "tour_status": user.profile.tour_status,
+            "has_dismissed_addon_promotion": user.profile.has_dismissed_addon_promotion,
             "logout_url": logout_url,
             "gravatar_url_small": user.gravatar_url(88),
             "gravatar_url_big": user.gravatar_url(176),
@@ -850,11 +868,11 @@ class AjaxFormView(FormView):
 
     @method_decorator(utils.require_AJAX)
     def get(self, *args, **kwargs):
-        return super(AjaxFormView, self).get(*args, **kwargs)
+        return super().get(*args, **kwargs)
 
     @method_decorator(utils.require_AJAX)
     def post(self, *args, **kwargs):
-        return super(AjaxFormView, self).post(*args, **kwargs)
+        return super().post(*args, **kwargs)
 
     def form_invalid(self, form):
         return JsonResponse(dict(errors=form.errors), status=400)

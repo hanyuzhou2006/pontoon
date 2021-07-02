@@ -1,11 +1,8 @@
-from __future__ import absolute_import  # Same name as silme library.
-
 """
 Parser for silme-compatible translation formats.
 """
 import codecs
 import silme
-from six import text_type
 
 from collections import OrderedDict
 from copy import copy
@@ -105,7 +102,7 @@ class SilmeResource(ParsedResource):
                     uncomment_moz_langpack=parser is IncParser and not source_resource,
                 )
             )
-        except IOError:
+        except OSError:
             # If the file doesn't exist, but we have a source resource,
             # we can keep going, we'll just not have any translations.
             if source_resource:
@@ -129,7 +126,7 @@ class SilmeResource(ParsedResource):
                 for comment in obj:
                     # Silme groups comments together, so we strip
                     # whitespace and split them up.
-                    lines = text_type(comment).strip().split("\n")
+                    lines = str(comment).strip().split("\n")
                     comments += [line.strip() for line in lines]
 
     @property
@@ -144,7 +141,7 @@ class SilmeResource(ParsedResource):
         """
         if self.source_resource is None:
             raise SyncError(
-                "Cannot save silme resource {0}: No source resource given.".format(
+                "Cannot save silme resource {}: No source resource given.".format(
                     self.path
                 )
             )
@@ -188,7 +185,7 @@ class SilmeResource(ParsedResource):
                     # No newline at end of file
                     continue
 
-                if type(line) == text_type and line.startswith("\n"):
+                if isinstance(line, str) and line.startswith("\n"):
                     line = line[len("\n") :]
                     new_structure[pos] = line
                     if len(line) == 0:

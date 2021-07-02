@@ -16,7 +16,6 @@ describe('reducer', () => {
             msTranslatorCode: '',
             systranTranslateCode: '',
             msTerminologyCode: '',
-            transvision: false,
             localizations: [],
             fetching: false,
         };

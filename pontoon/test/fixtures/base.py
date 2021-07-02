@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import pytest
 
 from pontoon.test import factories
@@ -39,7 +37,7 @@ def member(client, user_a):
     the `client` is authenticated
     """
 
-    class LoggedInMember(object):
+    class LoggedInMember:
         def __init__(self, user, client):
             client.force_login(user)
             self.client = client

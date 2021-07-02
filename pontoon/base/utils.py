@@ -1,22 +1,20 @@
-from __future__ import absolute_import
-
 import codecs
 import functools
+import io
 import os
+import re
+
+import pytz
+import requests
 import tempfile
 import time
 import zipfile
 
+from collections import defaultdict
 from datetime import datetime, timedelta
-from urllib.parse import urljoin
-
-import pytz
-import requests
+from dateutil.relativedelta import relativedelta
 from guardian.decorators import permission_required as guardian_permission_required
-
-from django.utils.text import slugify
-from six import BytesIO
-
+from urllib.parse import urljoin
 from xml.sax.saxutils import escape, quoteattr
 
 from django.db.models import Prefetch
@@ -24,7 +22,10 @@ from django.db.models.query import QuerySet
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.utils.text import slugify
 from django.utils.translation import trans_real
+
+UNUSABLE_SEARCH_CHAR = "☠"
 
 
 def split_ints(s):
@@ -67,9 +68,17 @@ def match_attr(collection, **attributes):
     )
 
 
-def aware_datetime(*args, **kwargs):
-    """Return an aware datetime using Django's configured timezone."""
-    return timezone.make_aware(datetime(*args, **kwargs))
+def group_dict_by(list_of_dicts, key):
+    """
+    Group dicts in a list by the given key. Return a defaultdict instance with
+    key used as the key and dict as the value.
+    """
+    group = defaultdict(list)
+
+    for dictionary in list_of_dicts:
+        group[dictionary[key]].append(dictionary)
+
+    return group
 
 
 def extension_in(filename, extensions):
@@ -96,6 +105,13 @@ def get_object_or_none(model, *args, **kwargs):
         return None
 
 
+def is_ajax(request):
+    """
+    Checks whether the given request is an AJAX request.
+    """
+    return request.headers.get("x-requested-with") == "XMLHttpRequest"
+
+
 def require_AJAX(f):
     """
     AJAX request required decorator
@@ -103,7 +119,7 @@ def require_AJAX(f):
 
     @functools.wraps(f)  # Required by New Relic
     def wrap(request, *args, **kwargs):
-        if not request.is_ajax():
+        if not is_ajax(request):
             return HttpResponseBadRequest("Bad Request: Request must be AJAX")
         return f(request, *args, **kwargs)
 
@@ -206,7 +222,7 @@ def get_download_content(slug, code, part):
     )
     isZipable = 1 < len(resources) < 10
     if isZipable:
-        s = BytesIO()
+        s = io.BytesIO()
         zf = zipfile.ZipFile(s, "w")
 
     # Download a single file if project has 1 or >= 10 resources
@@ -233,7 +249,7 @@ def get_download_content(slug, code, part):
 
     for resource in resources:
         # Get locale file
-        dirnames = set([locale.code, locale.code.replace("-", "_")])
+        dirnames = {locale.code, locale.code.replace("-", "_")}
         locale_path = _download_file(
             locale_prefixes, dirnames, vcs_project, resource.path
         )
@@ -424,6 +440,11 @@ def handle_upload_content(slug, code, part, f, user):
         changeset.translations_to_create[-1].update_latest_translation()
 
 
+def aware_datetime(*args, **kwargs):
+    """Return an aware datetime using Django's configured timezone."""
+    return timezone.make_aware(datetime(*args, **kwargs))
+
+
 def latest_datetime(datetimes):
     """
     Return the latest datetime in the given list of datetimes,
@@ -462,6 +483,29 @@ def convert_to_unix_time(my_datetime):
     return int(time.mktime(my_datetime.timetuple()) * 1000)
 
 
+def get_last_months(n):
+    """
+    Return a list of tuples representing last n months
+    """
+    start_date = datetime.now()
+    for _ in range(n):
+        yield (start_date.year, start_date.month)
+        start_date += relativedelta(months=-1)
+
+
+def sanitize_xml_input_string(string):
+    """
+    The XML specification (http://www.w3.org/TR/xml11/#charsets) lists a set of Unicode characters
+    that are either illegal or "discouraged". Replace these characters to get valid XML strings
+    """
+
+    illegal_xml_chars_re = re.compile(
+        "[\x00-\x08\x0b\x0c\x0e-\x1F\uD800-\uDFFF\uFFFE\uFFFF]"
+    )
+
+    return illegal_xml_chars_re.sub("", string)
+
+
 def build_translation_memory_file(creation_date, locale_code, entries):
     """
     TMX files will contain large amount of entries and it's impossible to render all the data with
@@ -473,45 +517,46 @@ def build_translation_memory_file(creation_date, locale_code, entries):
                          * key - key of an entity,
                          * source - source string of entity,
                          * target - translated string,
-                         * project_name - name of a project,
                          * project_slug - slugified name of a project,
     """
     yield (
-        u'<?xml version="1.0" encoding="UTF-8"?>'
-        u'\n<tmx version="1.4">'
-        u"\n\t<header"
-        u' adminlang="en-US"'
-        u' creationtoolversion="0.1"'
-        u' creationtool="pontoon"'
-        u' datatype="plaintext"'
-        u' segtype="sentence"'
-        u' o-tmf="plain text"'
-        u' srclang="en-US"'
-        u' creationdate="%(creation_date)s">'
-        u"\n\t</header>"
-        u"\n\t<body>" % {"creation_date": creation_date.isoformat()}
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '\n<tmx version="1.4">'
+        "\n\t<header"
+        ' adminlang="en-US"'
+        ' creationtoolversion="0.1"'
+        ' creationtool="pontoon"'
+        ' datatype="plaintext"'
+        ' segtype="sentence"'
+        ' o-tmf="plain text"'
+        ' srclang="en-US"'
+        ' creationdate="%(creation_date)s">'
+        "\n\t</header>"
+        "\n\t<body>" % {"creation_date": creation_date.isoformat()}
     )
-    for resource_path, key, source, target, project_name, project_slug in entries:
+    for resource_path, key, source, target, project_slug in entries:
         tuid = ":".join((project_slug, resource_path, slugify(key)))
+        source = sanitize_xml_input_string(source)
+        target = sanitize_xml_input_string(target)
+
         yield (
-            u'\n\t\t<tu tuid=%(tuid)s srclang="en-US">'
-            u'\n\t\t\t<tuv xml:lang="en-US">'
-            u"\n\t\t\t\t<seg>%(source)s</seg>"
-            u"\n\t\t\t</tuv>"
-            u"\n\t\t\t<tuv xml:lang=%(locale_code)s>"
-            u"\n\t\t\t\t<seg>%(target)s</seg>"
-            u"\n\t\t\t</tuv>"
-            u"\n\t\t</tu>"
+            '\n\t\t<tu tuid=%(tuid)s srclang="en-US">'
+            '\n\t\t\t<tuv xml:lang="en-US">'
+            "\n\t\t\t\t<seg>%(source)s</seg>"
+            "\n\t\t\t</tuv>"
+            "\n\t\t\t<tuv xml:lang=%(locale_code)s>"
+            "\n\t\t\t\t<seg>%(target)s</seg>"
+            "\n\t\t\t</tuv>"
+            "\n\t\t</tu>"
             % {
                 "tuid": quoteattr(tuid),
                 "source": escape(source),
                 "locale_code": quoteattr(locale_code),
                 "target": escape(target),
-                "project_name": escape(project_name),
             }
         )
 
-    yield (u"\n\t</body>" u"\n</tmx>\n")
+    yield ("\n\t</body>" "\n</tmx>\n")
 
 
 def get_m2m_changes(current_qs, new_qs):
@@ -546,3 +591,37 @@ def readonly_exists(projects, locale):
     return ProjectLocale.objects.filter(
         project__in=projects, locale=locale, readonly=True,
     ).exists()
+
+
+def get_search_phrases(search):
+    """
+    Split the search phrase into separate search queries.
+    When the user types a search query without the quotation, e.g.:
+    source file
+    The function splits it into separate search queries:
+    ["source", "file"]
+    It works like OR operator, the search engine is going to search for "source" and "file" in a string.
+
+    When the user types a quoted search query, e.g.:
+    "source file"
+    The function is going to use the full phrase without splitting into separate search queries.
+    It works like AND operator, the search engine is going to search for "source file" in a string.
+
+    :arg str search: search query, e.g. source file, "source file"
+    :returns: A list of substrings to search.
+    """
+    search_list = [
+        x.strip('"').replace(UNUSABLE_SEARCH_CHAR, '"')
+        for x in re.findall(
+            '([^"]\\S*|".+?")\\s*', search.replace('\\"', UNUSABLE_SEARCH_CHAR)
+        )
+    ]
+
+    # Search for `""` and `"` when entered as search terms
+    if search == '""' and not search_list:
+        search_list = ['""']
+
+    if search == '"' and not search_list:
+        search_list = ['"']
+
+    return search_list

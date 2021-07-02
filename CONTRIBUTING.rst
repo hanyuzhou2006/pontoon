@@ -28,7 +28,15 @@ Database
 ========
 
 By default, you will have default data loaded for only the Pontoon Intro project.
-If you have a database dump, you can load it into your PostgreSQL database by running:
+If you have a database dump, you can load it into your PostgreSQL database.
+
+Make sure you backup your existing database first:
+
+.. code-block:: shell
+
+    $ make dumpdb
+
+And then load the dump:
 
 .. code-block:: shell
 
@@ -69,11 +77,28 @@ The following is the `browser support matrix of Pontoon <https://browserl.ist/?q
     iOS >= 10.3
 
 
+Code style
+==========
+
+We use code formatters so that we do not have to fight over code style.
+You are free to write code however you like, because in the end the formatter is the one
+that will format it. We thus don't need to pay attention to style during
+code reviews, and are free from those never-ending code style discussions.
+
+To format the Python and the JavaScript code at once you can use:
+
+.. code-block:: shell
+
+    $ make format
+
+Code formatting is explained in more detail in the following sections.
+
+
 Python code conventions
 =======================
 
 Our Python code is automatically formatted using `black <https://black.readthedocs.io/en/stable/>`_.
-We enforce that in our Continuous Integration tool (travis), so you will need to run
+We enforce that in our Continuous Integration, so you will need to run
 black on your code before sending it for review.
 
 You can run black locally either as an
@@ -84,13 +109,6 @@ Alternatively, you can format your code using:
 .. code-block:: shell
 
     $ make black
-
-.. note::
-
-    Using black on all Python code means that we cannot fight over code style anymore.
-    You are free to write code however you like, because in the end black is the one
-    that will format it. We thus don't need to pay any more attention to style during
-    code reviews, and are free from those never-ending code style discussions.
 
 Additionally, we use a linter to verify that imports are correct. You can run it with:
 
@@ -105,11 +123,8 @@ ignore that error. Note that in most cases, it is better to fix the issues than 
 Javascript code conventions
 ===========================
 
-Outside the ``frontend`` folder, we don't follow strict rules other than using
-2-space indentation.
-
-Inside ``frontend`` (which contains the Translate app), our code is formatted using `Prettier <https://prettier.io/docs/en/index.html>_`.
-We enforce that in our Continuous Integration tool (travis), so you will need to run
+Our Javascript code is automatically formatted using `Prettier <https://prettier.io/docs/en/index.html>_`.
+We enforce that in our Continuous Integration, so you will need to run
 prettier on your code before sending it for review.
 
 You can run prettier locally either as an
@@ -121,25 +136,17 @@ Alternatively, you can format your code using:
 
     $ make prettier 
 
-Additioanally, there are linting rules that are defined in our
-``.eslintrc.js`` file.
-
-To run the linter, do:
+Additionally, there are linting rules that are defined in our
+``.eslintrc.js`` file. To run the linter, do:
 
 .. code-block:: shell
 
-    $ make lint-frontend
+    $ make eslint
+
+In the rare case when you cannot fix an eslint error, use ``// eslint-disable`` to make the linter
+ignore that error. Note that in most cases, it is better to fix the issues than ignore them.
 
 For more specifics about the ```frontend`` folder, look at the README.md file there.
-
-
-.. A note about formatting...::
-
-    To format both the frontend and Python code at once you can use:
-
-    .. code-block:: shell
-
-        $ make format
 
 
 Git conventions
@@ -197,24 +204,26 @@ Code reviews should review the changes in the context of the rest of the system.
 Dependencies
 ============
 
-Dependencies for production Pontoon are in ``requirements/default.txt``. Development dependencies are in
-``requirements/dev.txt``. They need to be pinned and hashed, and we use `hashin <https://pypi.python.org/pypi/hashin>`_ for that.
+Direct dependencies for Pontoon are distributed across three files:
 
-Note that we use a specific format for our dependencies, in order to make them more maintainable. When adding a new requirement, you should add it to the appropriate section and put its sub-dependencies in ``requirements/contraints.txt`` if applicable.
-For example, to add ``foobar`` version 5:
+1. ``requirements/default.in``: Running Pontoon in production
+2. ``requirements/dev.in``: Development
+3. ``requirements/test.in``: Testing and linting
+
+In order to pin and hash the direct and indirect dependencies, we use `pip-compile <https://pypi.org/project/pip-tools/>`_,
+which yields corresponding ``*.txt`` files. These ``*.txt`` files contain all direct and indirect dependencies,
+and can be used for installation with ``pip``. After any change to the ``*.in`` files,
+you should run the following command to update all ``requirements/*.txt`` files.
 
 .. code-block:: shell
 
-    $ hashin -r requirements/default.txt foobar==5
+    $ make requirements
 
-Then open ``requirements/default.txt`` and move the added dependencies to:
+When adding a new requirement, add it to the appropriate ``requirements/*.in`` file.
+For example, to add the development dependency ``foobar`` version 5, add ``foobar==5`` to ``requirements/dev.in``,
+and then run the command from above.
 
-* the first section if it has no other requirements
-* the ``requirements/constraints.txt`` if they are sub-dependencies, and add all their dependencies there as well.
-
-That format is documented more extensively inside the ``requirements/default.txt`` file.
-
-Once you are done adding or updating requirements, rebuild your docker environment:
+Once you are done adding, removing or updating requirements, rebuild your docker environment:
 
 .. code-block:: shell
 
@@ -222,6 +231,12 @@ Once you are done adding or updating requirements, rebuild your docker environme
 
 If there are problems, it'll tell you.
 
+To upgrade existing dependencies within the given constraints of the input
+files, you can pass options through to the ``pip-compile`` invocations, i.e.
+
+.. code-block:: shell
+
+    $ make requirements opts=--upgrade
 
 Documentation
 =============
@@ -237,7 +252,7 @@ a virtualenv to build docs, do this:
     $ cd docs/
     $ virtualenv venv
     $ source venv/bin/activate
-    $ pip install --require-hashes -r requirements/default.txt
+    $ pip install --require-hashes -r requirements.txt
 
 Then, to build the docs, run this:
 
@@ -348,7 +363,7 @@ steps, as they don't affect your setup if nothing has changed:
    git pull origin master
 
    # Install new dependencies or update existing ones.
-   pip2 install -U --force --require-hashes -r requirements/default.txt
+   pip install -U --force --require-hashes -r requirements/default.txt
 
    # Run database migrations.
    python manage.py migrate
@@ -370,18 +385,3 @@ If you want to have those files be built automatically when you make changes, yo
 .. code-block:: shell
 
     $ make build-frontend-w
-
-
-Integration with fluent
-=======================
-
-Pontoon is able to synchronize translations produced by libraries provided by
-`Project Fluent <https://projectfluent.org/>`_ and provides an advanced editor for translators.
-
-Because of our very close integration, we'll need to compile the fresh versions of
-javascript/python libraries in order to provide new features.
-
-It's important to remember to update both packages:
-
-* python-fluent (responsible for e.g. server-side sync process)
-* fluent-syntax (required by the fluent editor)

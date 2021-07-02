@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import, unicode_literals
-
 import os
 from datetime import datetime
 
@@ -50,14 +47,12 @@ def test_view_tmx_bad_params(client, entity_a, locale_a, settings_debug):
     assert response.status_code == 404
 
 
-@pytest.mark.xfail(reason="Original tests were broken")
-@pytest.mark.django_db
 def test_view_tmx_empty_file():
     data_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data",)
     filepath = "tmx/no_entries.tmx"
 
-    with open(os.path.join(data_root, filepath), "rU") as f:
-        xml = f.read().decode("utf-8")
+    with open(os.path.join(data_root, filepath), encoding="utf-8") as f:
+        xml = f.read()
 
     tmx_contents = build_translation_memory_file(datetime(2010, 1, 1), "sl", ())
     _check_xml(
@@ -67,43 +62,26 @@ def test_view_tmx_empty_file():
     )
 
 
-@pytest.mark.xfail(reason="Original tests were broken")
-@pytest.mark.django_db
 def test_view_tmx_valid_entries():
     data_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data",)
     filepath = "tmx/valid_entries.tmx"
 
-    with open(os.path.join(data_root, filepath), "rU") as f:
-        xml = f.read().decode("utf-8")
+    with open(os.path.join(data_root, filepath), encoding="utf-8") as f:
+        xml = f.read()
 
     tmx_contents = build_translation_memory_file(
         datetime(2010, 1, 1),
         "sl",
         (
-            (
-                "aa/bb/ccc",
-                "xxx",
-                "source string",
-                "translation",
-                "Pontoon App",
-                "pontoon",
-            ),
+            ("aa/bb/ccc", "xxx", "source string", "translation", "pontoon",),
             # Test escape of characters
-            (
-                "aa/bb/ccc",
-                'x&x&x#"',
-                "source string",
-                "translation",
-                "Pontoon & App",
-                "pontoon",
-            ),
+            ("aa/bb/ccc", 'x&y&z#"', "source string", "translation", "pontoon",),
             # Handle unicode characters
             (
                 "aa/bb/ccc",
                 "xxx",
                 "source string łążśźć",
                 "translation łążśźć",
-                "pontoon",
                 "pontoon",
             ),
             # Handle html content
@@ -113,6 +91,13 @@ def test_view_tmx_valid_entries():
                 "<p>source <strong>string</p>",
                 "<p>translation łążśźć</p>",
                 "pontoon",
+            ),
+            # Handle illegal characters
+            (
+                "aa/bb/ccc",
+                "xxx",
+                "content are c.1998–2019",
+                "content are c.1998–2019",
                 "pontoon",
             ),
         ),

@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from django.db.models import Max, Q
 
 from .base import TagsTRTool
@@ -37,7 +35,7 @@ class TagsLatestTranslationsTool(TagsTRTool):
 
     def get_data(self):
         _translations = self.translation_manager.none()
-        stats = super(TagsLatestTranslationsTool, self).get_data()
+        stats = super().get_data()
 
         for tr in stats.iterator():
             if tr["approved_date"] is not None and tr["approved_date"] > tr["date"]:

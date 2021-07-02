@@ -1,7 +1,6 @@
-from __future__ import absolute_import
+from unittest.mock import MagicMock, patch
 
 import pytest
-from mock import MagicMock, patch
 
 from pontoon.base.models import Translation
 from pontoon.tags.utils import TagsLatestTranslationsTool
@@ -50,7 +49,7 @@ def test_util_tags_translation_tool_get_data(
     elif name == "empty":
         pass
     else:
-        raise ValueError("Unsupported assertion type: {}".format(name))
+        raise ValueError(f"Unsupported assertion type: {name}")
 
 
 @patch("pontoon.tags.utils.TagsLatestTranslationsTool.get_data")

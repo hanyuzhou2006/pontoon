@@ -1,10 +1,7 @@
-from __future__ import absolute_import
-
 import json
+from unittest.mock import patch
 
 import pytest
-
-from mock import patch
 
 from pontoon.base.models import Entity, TranslatedResource
 from pontoon.test.factories import (
@@ -69,9 +66,7 @@ def test_view_entity_filters(member, resource_a, locale_a):
             params["extra"] = filter_
         else:
             params["status"] = filter_
-        patched_entity = patch(
-            "pontoon.base.models.Entity.objects.{}".format(filter_name)
-        )
+        patched_entity = patch(f"pontoon.base.models.Entity.objects.{filter_name}")
         with patched_entity as m:
             m.return_value = getattr(Entity.objects, filter_name)(locale_a)
             member.client.post(

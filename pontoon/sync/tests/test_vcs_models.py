@@ -1,13 +1,9 @@
-from __future__ import absolute_import
-
 import tempfile
 import os
 
 from http.client import HTTPException
-
-import scandir
-
-from mock import Mock, patch, PropertyMock
+from pathlib import Path
+from unittest.mock import Mock, patch, PropertyMock, MagicMock
 
 from pontoon.base.models import (
     Locale,
@@ -16,6 +12,7 @@ from pontoon.base.models import (
 )
 from pontoon.base.tests import (
     CONTAINS,
+    LocaleFactory,
     ProjectFactory,
     RepositoryFactory,
     ResourceFactory,
@@ -24,6 +21,7 @@ from pontoon.base.tests import (
 from pontoon.sync.exceptions import ParseError
 from pontoon.sync.tests import (
     PROJECT_CONFIG_CHECKOUT_PATH,
+    FakeCheckoutTestCase,
     VCSEntityFactory,
     VCSTranslationFactory,
 )
@@ -34,7 +32,6 @@ from pontoon.sync.vcs.models import (
     VCSProject,
     DownloadTOMLParser,
 )
-
 
 TEST_CHECKOUT_PATH = os.path.join(
     os.path.dirname(__file__), "directory_detection_tests"
@@ -70,11 +67,60 @@ class VCSProjectTests(VCSTestCase):
         self.mock_checkout_path = checkout_path_patch.start()
         self.addCleanup(checkout_path_patch.stop)
 
+        self.locale = LocaleFactory.create(code="XY")
         self.project = ProjectFactory.create(
-            repositories__permalink="https://example.com/l10n/{locale_code}"
+            locales=[self.locale],
+            repositories__permalink="https://example.com/l10n/{locale_code}",
         )
         self.vcs_project = VCSProject(self.project)
-        super(VCSProjectTests, self).setUp()
+        super().setUp()
+
+    @patch.object(VCSProject, "source_directory_path", new_callable=PropertyMock)
+    def test_get_relevant_files_with_config(self, source_directory_path_mock):
+        """
+        Return relative reference paths and locales of paths found in project configuration.
+        """
+        source_directory_path_mock.return_value = ""
+        paths = ["locale/path/to/localizable_file.ftl"]
+        self.vcs_project.configuration = VCSConfiguration(self.vcs_project)
+
+        # Return empty dict if no reference path found for any of the paths
+        with patch(
+            "pontoon.sync.vcs.models.VCSConfiguration.reference_path",
+            return_value=None,
+        ):
+            files = self.vcs_project.get_relevant_files_with_config(paths)
+            assert files == {}
+
+        # Return empty dict if no reference path found for any of the paths
+        with patch(
+            "pontoon.sync.vcs.models.VCSConfiguration.reference_path",
+            return_value="reference/path/to/localizable_file.ftl",
+        ):
+            files = self.vcs_project.get_relevant_files_with_config(paths)
+            assert files == {"reference/path/to/localizable_file.ftl": [self.locale]}
+
+    def test_get_relevant_files_without_config(self):
+        """
+        Return relative paths and their locales if they start with locale repository paths.
+        """
+        paths = [
+            "locales/xy/path/to/localizable_file.ftl",
+            "some.random.file",
+            ".hidden_file",
+        ]
+
+        locale_path_locales = {
+            "locales/ab": "AB",
+            "locales/cd": "CD",
+            "locales/xy": "XY",
+        }
+
+        files = self.vcs_project.get_relevant_files_without_config(
+            paths, locale_path_locales
+        )
+
+        assert files == {"path/to/localizable_file.ftl": ["XY"]}
 
     def test_missing_permalink_prefix(self):
         """
@@ -251,10 +297,10 @@ class VCSProjectTests(VCSTestCase):
         self.project.repositories.all().delete()
         self.project.repositories.add(RepositoryFactory.create(url=url))
 
-        with patch(
-            "pontoon.sync.vcs.models.scandir", wraps=scandir
-        ) as mock_scandir, patch("pontoon.sync.vcs.models.MOZILLA_REPOS", [url]):
-            mock_scandir.walk.return_value = [
+        with patch("pontoon.sync.vcs.models.os", wraps=os) as mock_os, patch(
+            "pontoon.sync.vcs.models.MOZILLA_REPOS", [url]
+        ):
+            mock_os.walk.return_value = [
                 ("/root", [], ["foo.pot", "region.properties"])
             ]
 
@@ -275,9 +321,7 @@ class VCSProjectTests(VCSTestCase):
             ("/root/templates", [], ("foo.pot",)),
         )
         with patch(
-            "pontoon.sync.vcs.models.scandir.walk",
-            wraps=scandir,
-            return_value=hidden_paths,
+            "pontoon.sync.vcs.models.os.walk", wraps=os, return_value=hidden_paths,
         ):
             assert list(self.vcs_project.resource_paths_without_config()) == [
                 "/root/templates/foo.pot"
@@ -288,7 +332,7 @@ class VCSConfigurationTests(VCSTestCase):
     toml = "l10n.toml"
 
     def setUp(self):
-        super(VCSConfigurationTests, self).setUp()
+        super().setUp()
         self.locale, _ = Locale.objects.get_or_create(code="fr")
 
         self.repository = RepositoryFactory()
@@ -378,6 +422,20 @@ class VCSConfigurationTests(VCSTestCase):
             == l10n_path
         )
 
+    def test_reference_path(self):
+        absolute_l10n_path = os.path.join(
+            PROJECT_CONFIG_CHECKOUT_PATH, "values-fr/amo.po",
+        )
+
+        reference_path = os.path.join(PROJECT_CONFIG_CHECKOUT_PATH, "values/amo.pot",)
+
+        assert (
+            self.vcs_project.configuration.reference_path(
+                self.locale, absolute_l10n_path,
+            )
+            == reference_path
+        )
+
     def test_locale_resources(self):
         assert sorted(
             self.vcs_project.configuration.locale_resources(self.locale),
@@ -432,7 +490,7 @@ class VCSConfigurationFullLocaleTests(VCSTestCase):
     def setUp(self):
         self.locale, _ = Locale.objects.get_or_create(code="fr")
         setUpResource(self)
-        super(VCSConfigurationFullLocaleTests, self).setUp()
+        super().setUp()
 
     def test_vcs_resource(self):
         self.vcs_project.configuration.add_locale(self.locale.code)
@@ -464,7 +522,7 @@ class VCSConfigurationPartialLocaleTests(VCSTestCase):
     def setUp(self):
         self.locale, _ = Locale.objects.get_or_create(code="sl")
         setUpResource(self)
-        super(VCSConfigurationPartialLocaleTests, self).setUp()
+        super().setUp()
 
     def test_vcs_resource(self):
         self.vcs_project.configuration.add_locale(self.locale.code)
@@ -502,6 +560,53 @@ class VCSEntityTests(VCSTestCase):
         assert not entity.has_translation_for("missing")
         assert entity.has_translation_for("empty")
         assert entity.has_translation_for("full")
+
+
+class VCSChangedConfigFilesTests(FakeCheckoutTestCase):
+    """
+    Tests the algorithm that detects changes of Project Config files.
+    """
+
+    def test_no_config_changes(self):
+        changed_source_files = {"file1.po": [], "test.toml": []}
+
+        with patch.object(
+            self.vcs_project, "configuration"
+        ) as changed_config_files_mock, patch.object(
+            self.vcs_project, "changed_source_files", return_value=changed_source_files
+        ) as changed_source_files_mock:
+            changed_config_files_mock.parsed_configuration.configs.__iter__.return_value = (
+                set()
+            )
+            changed_source_files_mock.__getitem__.return_value = changed_source_files
+            self.assertSetEqual(self.vcs_project.changed_config_files, set())
+
+    def test_changed_config_files(self):
+        config_file_mock = MagicMock()
+        config_file_mock.path = str(
+            Path(self.vcs_project.source_directory_path).joinpath(
+                Path("test-l10n.toml")
+            )
+        )
+        changed_config_files = [config_file_mock]
+        changed_source_files = {
+            "file1.po": [],
+            "test-l10n.toml": [],
+        }
+
+        with patch.object(
+            self.vcs_project, "configuration"
+        ) as changed_config_files_mock, patch.object(
+            self.vcs_project, "changed_source_files", return_value=changed_source_files
+        ) as changed_source_files_mock:
+            changed_config_files_mock.parsed_configuration.configs.__iter__.return_value = (
+                changed_config_files
+            )
+            changed_source_files_mock.__getitem__.return_value = changed_source_files
+
+            self.assertSetEqual(
+                self.vcs_project.changed_config_files, {"test-l10n.toml"}
+            )
 
 
 class DownloadTOMLParserTests(TestCase):
@@ -551,4 +656,4 @@ class DownloadTOMLParserTests(TestCase):
 
         self.assertTrue(self.requests_mock.called)
         self.assertEqual(project_config_path, self.temp_dir + "/l10n.toml")
-        self.assertEqual(open(project_config_path, "r").read(), "test-content")
+        self.assertEqual(open(project_config_path).read(), "test-content")

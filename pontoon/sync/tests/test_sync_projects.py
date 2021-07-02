@@ -1,10 +1,9 @@
-from __future__ import absolute_import
+import io
+from unittest.mock import ANY, patch
 
 from django.core.management.base import CommandError
 
 import pytest
-from mock import ANY, patch, PropertyMock
-from six import StringIO
 
 from pontoon.base.models import Project
 from pontoon.base.tests import ProjectFactory, TestCase
@@ -15,13 +14,13 @@ from pontoon.sync.models import SyncLog
 
 class CommandTests(TestCase):
     def setUp(self):
-        super(CommandTests, self).setUp()
+        super().setUp()
         self.command = sync_projects.Command()
         self.command.verbosity = 0
         self.command.no_commit = False
         self.command.no_pull = False
         self.command.force = False
-        self.command.stderr = StringIO()
+        self.command.stderr = io.StringIO()
 
         Project.objects.filter(slug="pontoon-intro").delete()
 
@@ -51,8 +50,8 @@ class CommandTests(TestCase):
 
     def test_non_repository_projects(self):
         """Only sync projects with data_source=repository."""
-        ProjectFactory.create(data_source="database")
-        repo_project = ProjectFactory.create(data_source="repository")
+        ProjectFactory.create(data_source=Project.DataSource.DATABASE)
+        repo_project = ProjectFactory.create(data_source=Project.DataSource.REPOSITORY)
 
         self.execute_command()
         self.mock_sync_project.delay.assert_called_with(
@@ -93,20 +92,8 @@ class CommandTests(TestCase):
 
         assert (
             self.command.stderr.getvalue()
-            == "Couldn't find projects with following slugs: aaa, bbb"
+            == "Couldn't find projects to sync with following slugs: aaa, bbb"
         )
-
-    def test_cant_commit(self):
-        """If project.can_commit is False, do not sync it."""
-        project = ProjectFactory.create()
-
-        with patch.object(
-            Project, "can_commit", new_callable=PropertyMock
-        ) as can_commit:
-            can_commit.return_value = False
-
-            self.execute_command(projects=project.slug)
-            assert not self.mock_sync_project.delay.called
 
     def test_options(self):
         project = ProjectFactory.create()

@@ -5,8 +5,6 @@ https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Internationalization
 See also:
 https://www.chromium.org/developers/design-documents/extensions/how-the-extension-system-works/i18n
 """
-from __future__ import absolute_import
-
 import codecs
 import copy
 import json
@@ -103,7 +101,7 @@ class JSONResource(ParsedResource):
                 self.json_file = json.load(resource, object_pairs_hook=OrderedDict)
                 validate(self.json_file, SCHEMA)
 
-        except (IOError, ValueError, ValidationError) as err:
+        except (OSError, ValueError, ValidationError) as err:
             # If the file doesn't exist or cannot be decoded,
             # but we have a source resource,
             # we can keep going, we'll just not have any translations.
@@ -127,7 +125,7 @@ class JSONResource(ParsedResource):
         """
         if not self.source_resource:
             raise SyncError(
-                "Cannot save JSON resource {0}: No source resource given.".format(
+                "Cannot save JSON resource {}: No source resource given.".format(
                     self.path
                 )
             )

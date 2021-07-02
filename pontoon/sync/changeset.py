@@ -1,8 +1,5 @@
-from __future__ import absolute_import
-
 import logging
 
-from bulk_update.helper import bulk_update
 from collections import defaultdict
 from django.contrib.auth.models import User
 from django.db import connection
@@ -23,7 +20,7 @@ from pontoon.checks.utils import bulk_run_checks
 log = logging.getLogger(__name__)
 
 
-class ChangeSet(object):
+class ChangeSet:
     """
     Stores a set of changes to be made to the database and the
     translations stored in VCS. Once all the necessary changes have been
@@ -218,9 +215,7 @@ class ChangeSet(object):
             for contributor in contributors:
                 notify.send(self.db_project, recipient=contributor, verb=verb)
 
-            log.info(
-                "New string notifications for project {} sent.".format(self.db_project)
-            )
+            log.info(f"New string notifications for project {self.db_project} sent.")
 
     def execute_create_db(self):
         new_entities = []
@@ -285,7 +280,7 @@ class ChangeSet(object):
                 new_action = None
                 if not db_translation.approved and not vcs_translation.fuzzy:
                     new_action = ActionLog(
-                        action_type="translation:approved",
+                        action_type=ActionLog.ActionType.TRANSLATION_APPROVED,
                         performed_by=user or self.sync_user,
                         translation=db_translation,
                     )
@@ -340,7 +335,7 @@ class ChangeSet(object):
                 # because they were approved previously.
                 if not translation.fuzzy:
                     new_action = ActionLog(
-                        action_type="translation:rejected",
+                        action_type=ActionLog.ActionType.TRANSLATION_REJECTED,
                         performed_by=user or self.sync_user,
                         translation=translation,
                     )
@@ -349,7 +344,7 @@ class ChangeSet(object):
                     translation.rejected_date = self.now
                 else:
                     new_action = ActionLog(
-                        action_type="translation:unapproved",
+                        action_type=ActionLog.ActionType.TRANSLATION_UNAPPROVED,
                         performed_by=user or self.sync_user,
                         translation=translation,
                     )
@@ -438,9 +433,9 @@ class ChangeSet(object):
 
     def bulk_update_entities(self):
         if len(self.entities_to_update) > 0:
-            bulk_update(
+            Entity.objects.bulk_update(
                 self.entities_to_update,
-                update_fields=[
+                fields=[
                     "resource",
                     "string",
                     "string_plural",
@@ -458,7 +453,7 @@ class ChangeSet(object):
         for translation in self.translations_to_create:
             self.actions_to_log.append(
                 ActionLog(
-                    action_type="translation:created",
+                    action_type=ActionLog.ActionType.TRANSLATION_CREATED,
                     created_at=translation.date,
                     performed_by=translation.user or self.sync_user,
                     translation=translation,
@@ -467,9 +462,9 @@ class ChangeSet(object):
 
     def bulk_update_translations(self):
         if len(self.translations_to_update) > 0:
-            bulk_update(
+            Translation.objects.bulk_update(
                 list(self.translations_to_update.values()),
-                update_fields=[
+                fields=[
                     "entity",
                     "locale",
                     "string",

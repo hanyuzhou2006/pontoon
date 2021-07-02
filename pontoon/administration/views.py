@@ -1,8 +1,5 @@
-from __future__ import absolute_import
-
+import csv
 import logging
-
-from backports import csv
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -24,7 +21,7 @@ from pontoon.administration.forms import (
     TagInlineFormSet,
 )
 from pontoon.base import utils
-from pontoon.base.utils import require_AJAX
+from pontoon.base.utils import require_AJAX, is_ajax
 from pontoon.base.models import (
     Entity,
     Locale,
@@ -64,7 +61,7 @@ def get_slug(request):
         log.error("Insufficient privileges.")
         return HttpResponse("error")
 
-    if not request.is_ajax():
+    if not is_ajax(request):
         log.error("Non-AJAX request")
         return HttpResponse("error")
 
@@ -184,7 +181,7 @@ def manage_project(request, slug=None, template="admin_project.html"):
                     tag_formset.save()
 
                 # If the data source is database and there are new strings, save them.
-                if project.data_source == "database":
+                if project.data_source == Project.DataSource.DATABASE:
                     _save_new_strings(project, request.POST.get("new_strings", ""))
                     _create_or_update_translated_resources(project, locales)
 
@@ -236,7 +233,9 @@ def manage_project(request, slug=None, template="admin_project.html"):
             }
         )
 
-    locales_available = Locale.objects.exclude(pk__in=locales_selected)
+    locales_available = Locale.objects.exclude(pk__in=locales_readonly).exclude(
+        pk__in=locales_selected
+    )
 
     # Admins reason in terms of locale codes (see bug 1394194)
     locales_readonly = locales_readonly.order_by("code")
@@ -286,7 +285,7 @@ def _get_project_strings_csv(project, entities, output):
 
     :arg Project project: the project from which to take strings
     :arg list entities: the list of all entities of the project
-    :arg buffer output: a buffer to which the CSV writed will send its data
+    :arg buffer output: a buffer to which the CSV writer will send its data
 
     :returns: the same output object with the CSV data
 
@@ -297,17 +296,15 @@ def _get_project_strings_csv(project, entities, output):
         .prefetch_related("locale")
         .prefetch_related("entity")
     )
-    all_data = dict((x.id, {"source": x.string}) for x in entities)
+    all_data = {x.id: {"source": x.string} for x in entities}
 
     for translation in translations:
         all_data[translation.entity.id][translation.locale.code] = translation.string
 
-    writer = csv.writer(output)
     headers = ["source"] + [x.code for x in locales]
-    writer.writerow(headers)
-    for string in all_data.values():
-        row = [string.get(key, "") for key in headers]
-        writer.writerow(row)
+    writer = csv.DictWriter(output, fieldnames=headers)
+    writer.writeheader()
+    writer.writerows(all_data.values())
 
     return output
 
@@ -409,7 +406,7 @@ def manage_project_strings(request, slug=None):
     except Project.DoesNotExist:
         raise Http404
 
-    if project.data_source != "database":
+    if project.data_source != Project.DataSource.DATABASE:
         return HttpResponseForbidden(
             "Project %s's strings come from a repository, managing strings is forbidden."
             % project.name

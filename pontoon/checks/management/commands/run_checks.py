@@ -1,20 +1,13 @@
-from __future__ import absolute_import
-
-import logging
-
 from celery import (
     group,
     signature,
 )
 from django.core.management.base import BaseCommand
-from six.moves import range
 
 from pontoon.base.models import Translation
 from pontoon.checks import DB_FORMATS
 
 from pontoon.checks.tasks import check_translations
-
-log = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):

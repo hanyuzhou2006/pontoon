@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import pytest
 
 from pontoon.base.forms import LocalePermsForm, ProjectLocalePermsForm
@@ -45,11 +43,19 @@ def test_locale_perms_form_log(
     changelog_entry0, changelog_entry1 = PermissionChangelog.objects.all()
 
     assert_permissionchangelog(
-        changelog_entry0, "added", user_a, user_c, locale_a.translators_group,
+        changelog_entry0,
+        PermissionChangelog.ActionType.ADDED,
+        user_a,
+        user_c,
+        locale_a.translators_group,
     )
 
     assert_permissionchangelog(
-        changelog_entry1, "added", user_a, user_b, locale_a.managers_group,
+        changelog_entry1,
+        PermissionChangelog.ActionType.ADDED,
+        user_a,
+        user_b,
+        locale_a.managers_group,
     )
 
     # Remove items from groups
@@ -63,11 +69,19 @@ def test_locale_perms_form_log(
     changelog_entry3, changelog_entry2 = PermissionChangelog.objects.order_by("-pk")[:2]
 
     assert_permissionchangelog(
-        changelog_entry2, "removed", user_a, user_c, locale_a.translators_group,
+        changelog_entry2,
+        PermissionChangelog.ActionType.REMOVED,
+        user_a,
+        user_c,
+        locale_a.translators_group,
     )
 
     assert_permissionchangelog(
-        changelog_entry3, "removed", user_a, user_b, locale_a.managers_group,
+        changelog_entry3,
+        PermissionChangelog.ActionType.REMOVED,
+        user_a,
+        user_b,
+        locale_a.managers_group,
     )
 
 
@@ -86,7 +100,11 @@ def test_project_locale_perms_form_log(
     (changelog_entry0,) = PermissionChangelog.objects.all()
 
     assert_permissionchangelog(
-        changelog_entry0, "added", user_a, user_c, locale_a.translators_group,
+        changelog_entry0,
+        PermissionChangelog.ActionType.ADDED,
+        user_a,
+        user_c,
+        locale_a.translators_group,
     )
 
     # Remove items from groups
@@ -100,5 +118,9 @@ def test_project_locale_perms_form_log(
     (changelog_entry1,) = PermissionChangelog.objects.order_by("-pk")[:1]
 
     assert_permissionchangelog(
-        changelog_entry1, "removed", user_a, user_c, locale_a.translators_group,
+        changelog_entry1,
+        PermissionChangelog.ActionType.REMOVED,
+        user_a,
+        user_c,
+        locale_a.translators_group,
     )

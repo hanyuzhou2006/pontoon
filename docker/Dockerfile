@@ -1,4 +1,4 @@
-FROM python:3.8.3-buster
+FROM python:3.8-buster
 
 ARG USER_ID=1000
 ARG GROUP_ID=1000
@@ -14,6 +14,7 @@ ENV PYTHONPATH /app
 # JavaScript applications paths
 ENV WEBPACK_BINARY /app/node_modules/.bin/webpack
 ENV YUGLIFY_BINARY /app/node_modules/.bin/yuglify
+ENV TERSER_BINARY /app/node_modules/.bin/terser
 
 # Install required software.
 RUN apt-get update \
@@ -21,8 +22,8 @@ RUN apt-get update \
     && apt-get install -y apt-transport-https \
     # Get source for node.js
     && curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - \
-    && echo 'deb https://deb.nodesource.com/node_10.x jessie main' > /etc/apt/sources.list.d/nodesource.list \
-    && echo 'deb-src https://deb.nodesource.com/node_10.x jessie main' >> /etc/apt/sources.list.d/nodesource.list \
+    && echo 'deb https://deb.nodesource.com/node_10.x buster main' > /etc/apt/sources.list.d/nodesource.list \
+    && echo 'deb-src https://deb.nodesource.com/node_10.x buster main' >> /etc/apt/sources.list.d/nodesource.list \
     # Get source for yarn
     && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
     && echo 'deb https://dl.yarnpkg.com/debian/ stable main' > /etc/apt/sources.list.d/yarn.list \
@@ -43,8 +44,7 @@ WORKDIR /app
 # Install Pontoon Python requirements
 COPY requirements/* /app/requirements/
 RUN pip install -U 'pip>=8' && \
-    pip install --no-cache-dir --require-hashes -r requirements/dev.txt && \
-    pip install --no-cache-dir --require-hashes -r requirements/test.txt
+    pip install --no-cache-dir --require-hashes -r requirements/dev.txt -r requirements/test.txt
 
 # Create the app user
 RUN groupadd -r --gid=${GROUP_ID} pontoon && useradd --uid=${USER_ID} --no-log-init -r -m -g pontoon pontoon

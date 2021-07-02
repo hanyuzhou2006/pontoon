@@ -1,7 +1,6 @@
-from __future__ import absolute_import
+from unittest.mock import ANY, patch, PropertyMock
 
 import pytest
-from mock import ANY, patch, PropertyMock
 
 from pontoon.base.models import ChangedEntityLocale, Locale, Project, Repository
 from pontoon.base.tests import (
@@ -26,7 +25,7 @@ from pontoon.sync.tests import (
 
 class SyncProjectTests(TestCase):
     def setUp(self):
-        super(SyncProjectTests, self).setUp()
+        super().setUp()
         self.db_project = ProjectFactory.create()
         self.repository = self.db_project.repositories.all()[0]
         self.sync_log = SyncLogFactory.create()
@@ -133,7 +132,7 @@ class SyncProjectTests(TestCase):
 
 class SyncTranslationsTests(FakeCheckoutTestCase):
     def setUp(self):
-        super(SyncTranslationsTests, self).setUp()
+        super().setUp()
         self.project_sync_log = ProjectSyncLogFactory.create()
 
         self.mock_pull_locale_repo_changes = self.patch(

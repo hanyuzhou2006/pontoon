@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from django.contrib import admin
 from pontoon.checks import models
 
@@ -17,15 +15,19 @@ class FailedCheckModelAdmin(admin.ModelAdmin):
         "resource",
     )
 
+    @admin.display
     def project(self, obj):
         return obj.translation.entity.resource.project.name
 
+    @admin.display
     def locale(self, obj):
         return obj.translation.locale.code
 
+    @admin.display
     def resource(self, obj):
         return obj.translation.entity.resource.path
 
+    @admin.display
     def translation(self, obj):
         return obj.translation.string
 

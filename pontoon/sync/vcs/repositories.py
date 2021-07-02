@@ -1,15 +1,11 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
-
+from abc import ABC, abstractmethod
 import logging
 import os
-import scandir
 import subprocess
-
-from six import text_type
 
 from django.conf import settings
 
+from pontoon.base.models import Repository
 
 log = logging.getLogger(__name__)
 
@@ -18,7 +14,7 @@ class PullFromRepositoryException(Exception):
     pass
 
 
-class PullFromRepository(object):
+class PullFromRepository:
     def __init__(self, source, target, branch):
         self.source = source
         self.target = target
@@ -48,13 +44,13 @@ class PullFromGit(PullFromRepository):
         code, output, error = execute(command, target)
 
         if code != 0:
-            log.info("Git: " + text_type(error))
+            log.info("Git: " + str(error))
             log.debug("Git: Clone instead.")
             command = ["git", "clone", source, target]
             code, output, error = execute(command)
 
             if code != 0:
-                raise PullFromRepositoryException(text_type(error))
+                raise PullFromRepositoryException(str(error))
 
             log.debug("Git: Repository at " + source + " cloned.")
         else:
@@ -65,7 +61,7 @@ class PullFromGit(PullFromRepository):
             code, output, error = execute(command, target)
 
             if code != 0:
-                raise PullFromRepositoryException(text_type(error))
+                raise PullFromRepositoryException(str(error))
 
             log.debug("Git: Branch " + branch + " checked out.")
 
@@ -88,7 +84,7 @@ class PullFromHg(PullFromRepository):
             log.debug("Mercurial: Repository at " + source + " cloned.")
 
         else:
-            raise PullFromRepositoryException(text_type(error))
+            raise PullFromRepositoryException(str(error))
 
 
 class PullFromSvn(PullFromRepository):
@@ -116,7 +112,7 @@ class PullFromSvn(PullFromRepository):
         code, output, error = execute(command, env=get_svn_env())
 
         if code != 0:
-            raise PullFromRepositoryException(text_type(error))
+            raise PullFromRepositoryException(str(error))
 
         log.debug("Subversion: Repository at " + source + " %s." % status)
 
@@ -125,7 +121,7 @@ class CommitToRepositoryException(Exception):
     pass
 
 
-class CommitToRepository(object):
+class CommitToRepository:
     def __init__(self, path, message, user, branch, url):
         self.path = path
         self.message = message
@@ -166,7 +162,7 @@ class CommitToGit(CommitToRepository):
         commit = git_cmd + ["commit", "-m", message, "--author", author]
         code, output, error = execute(commit, path)
         if code != 0 and len(error):
-            raise CommitToRepositoryException(text_type(error))
+            raise CommitToRepositoryException(str(error))
 
         # Push
         push_target = "HEAD"
@@ -176,7 +172,7 @@ class CommitToGit(CommitToRepository):
         push = ["git", "push", self.url, push_target]
         code, output, error = execute(push, path)
         if code != 0:
-            raise CommitToRepositoryException(text_type(error))
+            raise CommitToRepositoryException(str(error))
 
         if "Everything up-to-date" in error:
             return self.nothing_to_commit()
@@ -201,7 +197,7 @@ class CommitToHg(CommitToRepository):
         commit = ["hg", "commit", "-m", message, "-u", author]
         code, output, error = execute(commit, path)
         if code != 0 and len(error):
-            raise CommitToRepositoryException(text_type(error))
+            raise CommitToRepositoryException(str(error))
 
         # Push
         push = ["hg", "push"]
@@ -211,7 +207,7 @@ class CommitToHg(CommitToRepository):
             return self.nothing_to_commit()
 
         if code != 0 and len(error):
-            raise CommitToRepositoryException(text_type(error))
+            raise CommitToRepositoryException(str(error))
 
         log.info(message)
 
@@ -284,7 +280,7 @@ def commit_to_vcs(repo_type, path, message, user, branch, url):
         return obj.commit()
 
     except CommitToRepositoryException as e:
-        log.debug("%s Commit Error for %s: %s" % (repo_type.upper(), path, e))
+        log.debug(f"{repo_type.upper()} Commit Error for {path}: {e}")
         raise e
 
 
@@ -300,12 +296,12 @@ def get_svn_env():
         return None
 
 
-class VCSRepository(object):
+class VCSRepository(ABC):
     @classmethod
     def for_type(cls, repo_type, path):
         SubClass = cls.REPO_TYPES.get(repo_type)
         if SubClass is None:
-            raise ValueError("No subclass found for repo type {0}.".format(repo_type))
+            raise ValueError(f"No subclass found for repo type {repo_type}.")
 
         return SubClass(path)
 
@@ -318,18 +314,25 @@ class VCSRepository(object):
         if log_errors and code != 0:
             log.error(
                 "Error while executing command `{cmd}` in `{cwd}`: {stderr}".format(
-                    cmd=text_type(cmd), cwd=cwd, stderr=error
+                    cmd=str(cmd), cwd=cwd, stderr=error
                 )
             )
         return code, output, error
 
-    def get_changed_files(self, path, from_revision, statueses=None):
+    @abstractmethod
+    def get_changed_files(self, path, from_revision, statuses=None):
         """Get a list of changed files in the repository."""
-        raise NotImplementedError
+        pass
 
-    def get_removed_files(self, from_revision):
+    @abstractmethod
+    def get_removed_files(self, path, from_revision):
         """Get a list of removed files in the repository."""
-        raise NotImplementedError
+        pass
+
+    @property
+    @abstractmethod
+    def revision(self):
+        pass
 
 
 class SvnRepository(VCSRepository):
@@ -375,14 +378,7 @@ class GitRepository(VCSRepository):
     def get_changed_files(self, path, from_revision, statuses=None):
         statuses = statuses or ("A", "M")
         code, output, error = self.execute(
-            [
-                "git",
-                "diff",
-                "--name-status",
-                "{}..HEAD".format(from_revision),
-                "--",
-                path,
-            ],
+            ["git", "diff", "--name-status", f"{from_revision}..HEAD", "--", path],
         )
         if code == 0:
             return [
@@ -435,11 +431,10 @@ class HgRepository(VCSRepository):
         return self.get_changed_files(path, self._strip(from_revision), ("R",))
 
 
-# TODO: Tie these to the same constants that the Repository model uses.
 VCSRepository.REPO_TYPES = {
-    "hg": HgRepository,
-    "svn": SvnRepository,
-    "git": GitRepository,
+    Repository.Type.HG: HgRepository,
+    Repository.Type.SVN: SvnRepository,
+    Repository.Type.GIT: GitRepository,
 }
 
 
@@ -451,12 +446,12 @@ def get_revision(repo_type, path):
 def get_changed_files(repo_type, path, revision):
     """Return a list of changed files for the repository."""
     repo = VCSRepository.for_type(repo_type, path)
-    log.info("Retrieving changed files for: {}:{}".format(path, revision))
+    log.info(f"Retrieving changed files for: {path}:{revision}")
     # If there's no latest revision we should return all the files in the latest
     # version of repository
     if revision is None:
         paths = []
-        for root, _, files in scandir.walk(path):
+        for root, _, files in os.walk(path):
             for f in files:
                 if root[0] == "." or "/." in root:
                     continue

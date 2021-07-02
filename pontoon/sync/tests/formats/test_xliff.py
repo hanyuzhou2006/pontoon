@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from difflib import Differ
 from textwrap import dedent
 
@@ -57,7 +55,7 @@ class XLIFFTests(FormatTestsMixin, TestCase):
 
     def key(self, source_string):
         """XLIFF keys are prefixed with the file name."""
-        return u"filename" + KEY_SEPARATOR + super(XLIFFTests, self).key(source_string)
+        return "filename" + KEY_SEPARATOR + super().key(source_string)
 
     def assert_file_content(self, file_path, expected_content):
         """
@@ -110,7 +108,7 @@ class XLIFFTests(FormatTestsMixin, TestCase):
         expected_string = self.generate_xliff(
             dedent(
                 """
-            <trans-unit id="Source String Key">
+            <trans-unit id="Source String Key" xml:space="preserve">
                 <source>Source String</source>
                 <target>New Translated String</target>
                 <note>Comment</note>
@@ -120,7 +118,7 @@ class XLIFFTests(FormatTestsMixin, TestCase):
             locale_code=self.locale.code,
         )
 
-        super(XLIFFTests, self).run_save_basic(input_string, expected_string)
+        super().run_save_basic(input_string, expected_string)
 
     def test_save_remove(self):
         input_string = self.generate_xliff(
@@ -147,4 +145,4 @@ class XLIFFTests(FormatTestsMixin, TestCase):
             locale_code=self.locale.code,
         )
 
-        super(XLIFFTests, self).run_save_remove(input_string, expected_string)
+        super().run_save_remove(input_string, expected_string)

@@ -17,13 +17,11 @@
     font-weight: 300;
     line-height: 11px;
     margin-top: 6px;
-    text-transform: uppercase;
     padding-bottom: 2px;
 }
 
 .metadata .title {
     color: #888;
-    text-transform: uppercase;
 }
 
 .metadata div a {
@@ -32,7 +30,7 @@
 }
 
 .metadata .comment .content p {
-    display: inline-block;
+    display: inline;
 }
 
 .metadata div .divider {
@@ -46,6 +44,7 @@
     font-size: 14px;
     font-style: normal;
     line-height: 22px;
+    margin-top: -2px; /* Align with the source string comment button */
     padding-bottom: 6px;
     text-align: start;
     white-space: pre-wrap;

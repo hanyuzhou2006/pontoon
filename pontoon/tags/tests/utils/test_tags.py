@@ -1,8 +1,6 @@
-from __future__ import absolute_import
+from unittest.mock import MagicMock, patch, PropertyMock
 
 import pytest
-
-from mock import MagicMock, patch, PropertyMock
 
 from pontoon.tags.models import Tag
 from pontoon.tags.utils import (

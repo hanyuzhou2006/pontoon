@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import base64
 import hashlib
 
@@ -15,7 +13,7 @@ class PontoonSocialAdapter(DefaultSocialAccountAdapter):
         Generates an unique username in the same way as it was done in django-browserid.
         This is required to avoid collisions and the backward compatibility.
         """
-        user = super(PontoonSocialAdapter, self).save_user(request, sociallogin, form)
+        user = super().save_user(request, sociallogin, form)
         user.username = smart_str(
             base64.urlsafe_b64encode(
                 hashlib.sha1(smart_bytes(user.email)).digest()

@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
@@ -51,7 +49,11 @@ class Command(BaseCommand):
         """
         sync_log = SyncLog.objects.create(start_time=timezone.now())
 
-        projects = Project.objects.syncable()
+        if options["force"]:
+            projects = Project.objects.force_syncable()
+        else:
+            projects = Project.objects.syncable()
+
         slugs = (
             options["projects"].split(",")
             if "projects" in options and options["projects"]
@@ -61,33 +63,24 @@ class Command(BaseCommand):
             projects = projects.filter(slug__in=slugs)
 
         if len(projects) < 1:
-            raise CommandError("No matching projects found.")
+            raise CommandError("No matching projects to sync found.")
 
         if slugs and len(projects) != len(slugs):
             invalid_slugs = sorted(
                 set(slugs).difference(set(projects.values_list("slug", flat=True)))
             )
             self.stderr.write(
-                "Couldn't find projects with following slugs: {}".format(
+                "Couldn't find projects to sync with following slugs: {}".format(
                     ", ".join(invalid_slugs)
                 )
             )
 
         for project in projects:
-            if not project.can_commit:
-                self.stdout.write(
-                    u"Skipping project {0}, cannot commit to repository.".format(
-                        project.name
-                    )
-                )
-            else:
-                self.stdout.write(
-                    u"Scheduling sync for project {0}.".format(project.name)
-                )
-                sync_project.delay(
-                    project.pk,
-                    sync_log.pk,
-                    no_pull=options["no_pull"],
-                    no_commit=options["no_commit"],
-                    force=options["force"],
-                )
+            self.stdout.write(f"Scheduling sync for project {project.name}.")
+            sync_project.delay(
+                project.pk,
+                sync_log.pk,
+                no_pull=options["no_pull"],
+                no_commit=options["no_commit"],
+                force=options["force"],
+            )

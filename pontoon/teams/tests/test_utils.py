@@ -1,8 +1,6 @@
 """
 Tests related to the utils provided in pontoon.teams.libraries
 """
-from __future__ import absolute_import
-
 import pytest
 
 from pontoon.base.models import PermissionChangelog
@@ -38,10 +36,18 @@ def test_log_group_members_added(translators_group, user_a, assert_permissioncha
     changelog_entry0, changelog_entry1 = PermissionChangelog.objects.all()
 
     assert_permissionchangelog(
-        changelog_entry0, "added", user_a, member0, translators_group
+        changelog_entry0,
+        PermissionChangelog.ActionType.ADDED,
+        user_a,
+        member0,
+        translators_group,
     )
     assert_permissionchangelog(
-        changelog_entry1, "added", user_a, member2, translators_group
+        changelog_entry1,
+        PermissionChangelog.ActionType.ADDED,
+        user_a,
+        member2,
+        translators_group,
     )
 
 
@@ -57,10 +63,18 @@ def test_log_group_members_removed(
     changelog_entry0, changelog_entry1 = PermissionChangelog.objects.all()
 
     assert_permissionchangelog(
-        changelog_entry0, "removed", user_a, member0, translators_group
+        changelog_entry0,
+        PermissionChangelog.ActionType.REMOVED,
+        user_a,
+        member0,
+        translators_group,
     )
     assert_permissionchangelog(
-        changelog_entry1, "removed", user_a, member2, translators_group
+        changelog_entry1,
+        PermissionChangelog.ActionType.REMOVED,
+        user_a,
+        member2,
+        translators_group,
     )
 
 
@@ -75,11 +89,19 @@ def test_log_group_members_mixed(translators_group, user_a, assert_permissioncha
     changelog_entry0, changelog_entry1 = PermissionChangelog.objects.all()
 
     assert_permissionchangelog(
-        changelog_entry0, "added", user_a, member2, translators_group
+        changelog_entry0,
+        PermissionChangelog.ActionType.ADDED,
+        user_a,
+        member2,
+        translators_group,
     )
 
     assert_permissionchangelog(
-        changelog_entry1, "removed", user_a, member0, translators_group
+        changelog_entry1,
+        PermissionChangelog.ActionType.REMOVED,
+        user_a,
+        member0,
+        translators_group,
     )
 
 
@@ -101,8 +123,12 @@ def test_log_user_groups_added(
 
     changelog_entry0, changelog_entry1 = PermissionChangelog.objects.all()
 
-    assert_permissionchangelog(changelog_entry0, "added", user_a, user_b, group0)
-    assert_permissionchangelog(changelog_entry1, "added", user_a, user_b, group2)
+    assert_permissionchangelog(
+        changelog_entry0, PermissionChangelog.ActionType.ADDED, user_a, user_b, group0
+    )
+    assert_permissionchangelog(
+        changelog_entry1, PermissionChangelog.ActionType.ADDED, user_a, user_b, group2
+    )
 
 
 @pytest.mark.django_db
@@ -116,9 +142,13 @@ def test_log_user_groups_removed(
 
     changelog_entry0, changelog_entry1 = PermissionChangelog.objects.all()
 
-    assert_permissionchangelog(changelog_entry0, "removed", user_a, user_b, group0)
+    assert_permissionchangelog(
+        changelog_entry0, PermissionChangelog.ActionType.REMOVED, user_a, user_b, group0
+    )
 
-    assert_permissionchangelog(changelog_entry1, "removed", user_a, user_b, group2)
+    assert_permissionchangelog(
+        changelog_entry1, PermissionChangelog.ActionType.REMOVED, user_a, user_b, group2
+    )
 
 
 @pytest.mark.django_db
@@ -132,6 +162,10 @@ def test_log_user_groups_mixed(
     log_user_groups(user_a, user_b, (added_groups, removed_groups))
 
     changelog_entry0, changelog_entry1 = PermissionChangelog.objects.all()
-    assert_permissionchangelog(changelog_entry0, "added", user_a, user_b, group2)
+    assert_permissionchangelog(
+        changelog_entry0, PermissionChangelog.ActionType.ADDED, user_a, user_b, group2
+    )
 
-    assert_permissionchangelog(changelog_entry1, "removed", user_a, user_b, group0)
+    assert_permissionchangelog(
+        changelog_entry1, PermissionChangelog.ActionType.REMOVED, user_a, user_b, group0
+    )

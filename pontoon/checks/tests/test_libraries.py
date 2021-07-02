@@ -1,10 +1,9 @@
-from __future__ import absolute_import
+from textwrap import dedent
+from unittest.mock import patch, MagicMock, ANY
 
 import pytest
 
-from textwrap import dedent
-from mock import patch, MagicMock, ANY
-
+from pontoon.base.models import Resource
 from pontoon.checks.libraries import run_checks
 
 
@@ -21,7 +20,7 @@ def entity_properties_mock():
     """
     mock = MagicMock()
     mock.resource.path = "file.properties"
-    mock.resource.format = "properties"
+    mock.resource.format = Resource.Format.PROPERTIES
     mock.resource.all.return_value = []
     mock.string = "Example string"
     mock.comment = ""
@@ -36,7 +35,7 @@ def entity_dtd_mock():
     """
     mock = MagicMock()
     mock.resource.path = "file.dtd"
-    mock.resource.format = "dtd"
+    mock.resource.format = Resource.Format.DTD
     mock.resource.all.return_value = []
     mock.string = "Example string"
     mock.key = "entity_dtd"
@@ -52,7 +51,7 @@ def entity_properties_plurals_mock():
     """
     mock = MagicMock()
     mock.resource.path = "file.properties"
-    mock.resource.format = "properties"
+    mock.resource.format = Resource.Format.PROPERTIES
     mock.resource.all.return_value = []
     mock.string = "Example string"
     mock.comment = "Localization_and_Plurals"
@@ -82,7 +81,7 @@ def entity_ftl_mock():
     """
     mock = MagicMock()
     mock.resource.path = "file.ftl"
-    mock.resource.format = "ftl"
+    mock.resource.format = Resource.Format.FTL
     mock.resource.all.return_value = []
     mock.string = dedent(
         """

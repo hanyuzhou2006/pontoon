@@ -1,12 +1,11 @@
-from __future__ import absolute_import
-
-from mock import patch, PropertyMock
+from unittest.mock import patch, PropertyMock
 
 from pontoon.base.utils import aware_datetime
 from pontoon.base.tests import TranslationFactory
 from pontoon.checks.models import (
     Warning,
     Error,
+    FailedCheck,
 )
 from pontoon.sync.tests import FakeCheckoutTestCase
 
@@ -17,7 +16,7 @@ class TestChangesetTranslationsChecks(FakeCheckoutTestCase):
     """
 
     def setUp(self):
-        super(TestChangesetTranslationsChecks, self).setUp()
+        super().setUp()
 
         changed_translation_patch = patch(
             "pontoon.sync.changeset.ChangeSet.changed_translations",
@@ -85,7 +84,7 @@ class TestChangesetTranslationsChecks(FakeCheckoutTestCase):
 
         (error,) = Error.objects.all()
 
-        assert error.library == "p"
+        assert error.library == FailedCheck.Library.PONTOON
         assert error.message == "Newline characters are not allowed"
         assert error.translation == invalid_translation
 
