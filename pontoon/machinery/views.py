@@ -19,7 +19,6 @@ from pontoon.base.models import Entity, Locale, Project, Translation
 from pontoon.machinery.utils import (
     get_concordance_search_data,
     get_google_translate_data,
-    get_google_cn_translate_data,
     get_translation_memory_data,
 )
 

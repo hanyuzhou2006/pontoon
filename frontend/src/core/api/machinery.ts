@@ -234,30 +234,4 @@ export default class MachineryAPI extends APIBase {
             },
         ];
     }
-
-    async getGoogleCnTranslation(
-        source: string,
-        locale: Locale,
-    ): Promise<Translations> {
-        const url = '/google-cn-translate/';
-        const params = {
-            text: source,
-            locale: locale.googleCnTranslateCode,
-        };
-
-        const results = await this._get(url, params);
-
-        if (!results.translations) {
-            return [];
-        }
-
-        return results.translations.map((item): MachineryTranslation => {
-            return {
-                sources: ['google-cn-translate'],
-                original: item.source,
-                translation: item.target,
-                quality: Math.round(item.quality),
-            };
-        });
-    }
 }

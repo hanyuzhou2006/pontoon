@@ -11,7 +11,6 @@ export default class LocaleAPI extends APIBase {
                 direction
                 script
                 googleTranslateCode
-                googleCnTranslateCode
                 msTranslatorCode
                 systranTranslateCode
                 msTerminologyCode

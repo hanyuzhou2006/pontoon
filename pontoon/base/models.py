@@ -615,16 +615,6 @@ class Locale(AggregatedStats):
         support for Google Cloud Translation machine translation service.
         """,
     )
-    google_cn_translate_code = models.CharField(
-        max_length=100,
-        blank=True,
-        help_text="""
-    Google CN Translate maintains its own list of
-    <a href="https://translate.google.com/intl/en/about/languages/">
-    supported locales</a>. Choose a matching locale from the list or leave blank to disable
-    support for Google Cloud Translation machine translation service.
-    """,
-    )
     # Codes used by optional Microsoft services
     ms_translator_code = models.CharField(
         max_length=20,
@@ -810,7 +800,6 @@ class Locale(AggregatedStats):
             "direction": self.direction,
             "script": self.script,
             "google_translate_code": self.google_translate_code,
-            "google_cn_translate_code": self.google_cn_translate_code,
             "ms_translator_code": self.ms_translator_code,
             "systran_translate_code": self.systran_translate_code,
             "ms_terminology_code": self.ms_terminology_code,
