@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 
+import { useAppDispatch, useAppSelector } from 'hooks';
 import * as editor from 'core/editor';
 import * as entities from 'core/entities';
 
@@ -15,15 +15,15 @@ type Props = {
 export default function GenericTranslationForm(
     props: Props,
 ): React.ReactElement<'textarea'> {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
 
-    const translation = useSelector((state) => state.editor.translation);
-    const changeSource = useSelector((state) => state.editor.changeSource);
-    const searchInputFocused = useSelector(
+    const translation = useAppSelector((state) => state.editor.translation);
+    const changeSource = useAppSelector((state) => state.editor.changeSource);
+    const searchInputFocused = useAppSelector(
         (state) => state.search.searchInputFocused,
     );
-    const locale = useSelector((state) => state.locale);
-    const isReadOnlyEditor = useSelector((state) =>
+    const locale = useAppSelector((state) => state.locale);
+    const isReadOnlyEditor = useAppSelector((state) =>
         entities.selectors.isReadOnlyEditor(state),
     );
 
@@ -74,6 +74,10 @@ export default function GenericTranslationForm(
         // Update the state to show the new content in the Editor.
         props.updateTranslation(input.value);
     });
+
+    if (typeof translation !== 'string') {
+        return null;
+    }
 
     function handleChange(event: React.SyntheticEvent<HTMLTextAreaElement>) {
         props.updateTranslation(event.currentTarget.value);

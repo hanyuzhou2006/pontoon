@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { Localized } from '@fluent/react';
 import { Link } from 'react-router-dom';
 
@@ -7,6 +6,7 @@ import './Translation.css';
 
 import { TranslationProxy } from 'core/translation';
 
+import { useAppDispatch, useAppSelector } from 'hooks';
 import * as editor from 'core/editor';
 import * as entities from 'core/entities';
 import type { Entity, OtherLocaleTranslation } from 'core/api';
@@ -30,8 +30,8 @@ export default function Translation(
 ): React.ReactElement<React.ElementType> {
     const { entity, translation, parameters, index } = props;
 
-    const dispatch = useDispatch();
-    const isReadOnlyEditor = useSelector((state) =>
+    const dispatch = useAppDispatch();
+    const isReadOnlyEditor = useAppSelector((state) =>
         entities.selectors.isReadOnlyEditor(state),
     );
 
@@ -41,10 +41,10 @@ export default function Translation(
         className += ' cannot-copy';
     }
 
-    const selectedHelperElementIndex = useSelector(
+    const selectedHelperElementIndex = useAppSelector(
         (state) => state[editor.NAME].selectedHelperElementIndex,
     );
-    const changeSource = useSelector(
+    const changeSource = useAppSelector(
         (state) => state[editor.NAME].changeSource,
     );
     const isSelected =
@@ -64,9 +64,13 @@ export default function Translation(
     const translationRef = React.useRef();
     React.useEffect(() => {
         if (selectedHelperElementIndex === index) {
+            const mediaQuery = window.matchMedia(
+                '(prefers-reduced-motion: reduce)',
+            );
+            const behavior = mediaQuery.matches ? 'auto' : 'smooth';
             // @ts-expect-error: What can be undefined here?
             translationRef.current?.scrollIntoView?.({
-                behavior: 'smooth',
+                behavior: behavior,
                 block: 'nearest',
             });
         }

@@ -1,10 +1,10 @@
 import * as React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { Localized } from '@fluent/react';
-import { serializeVariantKey } from '@fluent/syntax';
+import { Message, Term, serializeVariantKey } from '@fluent/syntax';
 
 import './RichTranslationForm.css';
 
+import { useAppDispatch, useAppSelector } from 'hooks';
 import * as editor from 'core/editor';
 import * as entities from 'core/entities';
 import * as locale from 'core/locale';
@@ -74,18 +74,18 @@ export default function RichTranslationForm(
     const accessKeyElementIdRef = React.useRef(null);
     const focusedElementIdRef = React.useRef(null);
 
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
 
-    const message = useSelector((state) => state.editor.translation);
-    const changeSource = useSelector((state) => state.editor.changeSource);
-    const localeState = useSelector((state) => state.locale);
-    const isReadOnlyEditor = useSelector((state) =>
+    const message = useAppSelector((state) => state.editor.translation);
+    const changeSource = useAppSelector((state) => state.editor.changeSource);
+    const localeState = useAppSelector((state) => state.locale);
+    const isReadOnlyEditor = useAppSelector((state) =>
         entities.selectors.isReadOnlyEditor(state),
     );
-    const searchInputFocused = useSelector(
+    const searchInputFocused = useAppSelector(
         (state) => state.search.searchInputFocused,
     );
-    const entity = useSelector((state) =>
+    const entity = useAppSelector((state) =>
         entities.selectors.getSelectedEntity(state),
     );
 
@@ -198,7 +198,10 @@ export default function RichTranslationForm(
         getFirstInput,
     ]);
 
-    if (typeof message === 'string') {
+    if (
+        typeof message === 'string' ||
+        !(message instanceof Message || message instanceof Term)
+    ) {
         // This is a transitional state, and this editor is not able to handle a
         // non-Fluent message translation. Thus we abort this render and wait for the
         // next one.

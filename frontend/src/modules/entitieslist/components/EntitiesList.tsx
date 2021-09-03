@@ -1,9 +1,10 @@
 import * as React from 'react';
-import { useDispatch, useSelector, useStore } from 'react-redux';
+import { useStore } from 'react-redux';
 import InfiniteScroll from 'react-infinite-scroller';
 
 import './EntitiesList.css';
 
+import { useAppDispatch, useAppSelector } from 'hooks';
 import * as editor from 'core/editor';
 import * as entities from 'core/entities';
 import * as locale from 'core/locale';
@@ -108,10 +109,14 @@ export class EntitiesListBase extends React.Component<InternalProps> {
         ) {
             const list = this.list.current;
             const element = list.querySelector('li.selected');
+            const mediaQuery = window.matchMedia(
+                '(prefers-reduced-motion: reduce)',
+            );
+            const behavior = mediaQuery.matches ? 'auto' : 'smooth';
 
             if (element) {
                 element.scrollIntoView({
-                    behavior: 'smooth',
+                    behavior: behavior,
                     block: 'nearest',
                 });
             }
@@ -391,25 +396,25 @@ export default function EntitiesList(): React.ReactElement<
     typeof EntitiesListBase
 > {
     const state = {
-        batchactions: useSelector((state) => state[batchactions.NAME]),
-        entities: useSelector((state) => state[entities.NAME]),
-        isReadOnlyEditor: useSelector((state) =>
+        batchactions: useAppSelector((state) => state[batchactions.NAME]),
+        entities: useAppSelector((state) => state[entities.NAME]),
+        isReadOnlyEditor: useAppSelector((state) =>
             entities.selectors.isReadOnlyEditor(state),
         ),
-        isTranslator: useSelector((state) =>
+        isTranslator: useAppSelector((state) =>
             user.selectors.isTranslator(state),
         ),
-        parameters: useSelector((state) =>
+        parameters: useAppSelector((state) =>
             navigation.selectors.getNavigationParams(state),
         ),
-        locale: useSelector((state) => state[locale.NAME]),
-        router: useSelector((state) => state.router),
+        locale: useAppSelector((state) => state[locale.NAME]),
+        router: useAppSelector((state) => state.router),
     };
 
     return (
         <EntitiesListBase
             {...state}
-            dispatch={useDispatch()}
+            dispatch={useAppDispatch()}
             store={useStore()}
         />
     );

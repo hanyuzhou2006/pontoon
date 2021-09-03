@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 
 import { actions } from '..';
 
+import { useAppDispatch, useAppSelector } from 'hooks';
 import * as editor from 'core/editor';
 import * as entities from 'core/entities';
 import type { MachineryTranslation, SourceType } from 'core/api';
@@ -13,10 +13,10 @@ import useUpdateTranslation from './useUpdateTranslation';
 /**
  * Return a function to copy the original translation into the editor.
  */
-export default function useCopyMachineryTranslation(): (
-    translation: MachineryTranslation,
-) => void {
-    const dispatch = useDispatch();
+export default function useCopyMachineryTranslation(
+    entity?: number | null,
+): (translation: MachineryTranslation) => void {
+    const dispatch = useAppDispatch();
 
     const addTextToTranslation = useAddTextToTranslation();
     const updateTranslation = useUpdateTranslation();
@@ -32,13 +32,10 @@ export default function useCopyMachineryTranslation(): (
         [dispatch],
     );
 
-    const isReadOnlyEditor = useSelector((state) =>
+    const isReadOnlyEditor = useAppSelector((state) =>
         entities.selectors.isReadOnlyEditor(state),
     );
-    const entity = useSelector((state) =>
-        entities.selectors.getSelectedEntity(state),
-    );
-    const isFluentTranslationMessage = useSelector((state) =>
+    const isFluentTranslationMessage = useAppSelector((state) =>
         editor.selectors.isFluentTranslationMessage(state),
     );
 

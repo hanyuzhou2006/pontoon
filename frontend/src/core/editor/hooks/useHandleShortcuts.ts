@@ -1,5 +1,4 @@
-import { useDispatch, useSelector } from 'react-redux';
-
+import { useAppDispatch, useAppSelector } from 'hooks';
 import * as editor from 'core/editor';
 import * as entities from 'core/entities';
 import * as unsavedchanges from 'modules/unsavedchanges';
@@ -13,7 +12,7 @@ export default function useHandleShortcuts(): (
     clearEditorCustom?: () => void,
     copyOriginalIntoEditorCustom?: () => void,
 ) => void {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
 
     const clearEditor = editor.useClearEditor();
     const copyMachineryTranslation = editor.useCopyMachineryTranslation();
@@ -21,24 +20,24 @@ export default function useHandleShortcuts(): (
     const copyOtherLocaleTranslation = editor.useCopyOtherLocaleTranslation();
     const updateTranslationStatus = editor.useUpdateTranslationStatus();
 
-    const editorState = useSelector((state) => state.editor);
-    const unsavedChangesShown = useSelector(
+    const editorState = useAppSelector((state) => state.editor);
+    const unsavedChangesShown = useAppSelector(
         (state) => state.unsavedchanges.shown,
     );
-    const isReadOnlyEditor = useSelector((state) =>
+    const isReadOnlyEditor = useAppSelector((state) =>
         entities.selectors.isReadOnlyEditor(state),
     );
-    const sameExistingTranslation = useSelector((state) =>
+    const sameExistingTranslation = useAppSelector((state) =>
         editor.selectors.sameExistingTranslation(state),
     );
 
-    const machineryTranslations = useSelector(
+    const machineryTranslations = useAppSelector(
         (state) => state.machinery.translations,
     );
-    const concordanceSearchResults = useSelector(
+    const concordanceSearchResults = useAppSelector(
         (state) => state.machinery.searchResults,
     );
-    const otherLocaleTranslations = useSelector(
+    const otherLocaleTranslations = useAppSelector(
         (state) => state.otherlocales.translations,
     );
 

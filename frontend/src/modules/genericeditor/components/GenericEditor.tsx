@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 
+import { useAppDispatch, useAppSelector } from 'hooks';
 import * as editor from 'core/editor';
 import * as entities from 'core/entities';
 import * as plural from 'core/plural';
@@ -11,18 +11,18 @@ import GenericTranslationForm from './GenericTranslationForm';
  * Hook to update the editor content whenever the entity changes.
  */
 function useLoadTranslation() {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
 
     const updateTranslation = editor.useUpdateTranslation();
 
-    const changeSource = useSelector((state) => state.editor.changeSource);
-    const entity = useSelector((state) =>
+    const changeSource = useAppSelector((state) => state.editor.changeSource);
+    const entity = useAppSelector((state) =>
         entities.selectors.getSelectedEntity(state),
     );
-    const pluralForm = useSelector((state) =>
+    const pluralForm = useAppSelector((state) =>
         plural.selectors.getPluralForm(state),
     );
-    const activeTranslationString = useSelector((state) =>
+    const activeTranslationString = useAppSelector((state) =>
         plural.selectors.getTranslationStringForSelectedEntity(state),
     );
 
@@ -52,7 +52,7 @@ function useLoadTranslation() {
  * Shows a plural selector, a translation form and a menu.
  */
 export default function GenericEditor(): null | React.ReactElement<any> {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
 
     useLoadTranslation();
     const updateTranslation = editor.useUpdateTranslation();
@@ -60,15 +60,15 @@ export default function GenericEditor(): null | React.ReactElement<any> {
     const copyOriginalIntoEditor = editor.useCopyOriginalIntoEditor();
     const sendTranslation = editor.useSendTranslation();
 
-    const translation = useSelector((state) => state.editor.translation);
-    const entity = useSelector((state) =>
+    const translation = useAppSelector((state) => state.editor.translation);
+    const entity = useAppSelector((state) =>
         entities.selectors.getSelectedEntity(state),
     );
-    const pluralForm = useSelector((state) =>
+    const pluralForm = useAppSelector((state) =>
         plural.selectors.getPluralForm(state),
     );
 
-    if (!entity) {
+    if (!entity || typeof translation !== 'string') {
         return null;
     }
 

@@ -1,31 +1,32 @@
 import * as React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 
+import { useAppDispatch, useAppSelector } from 'hooks';
 import * as unsavedchanges from 'modules/unsavedchanges';
 
 export default function useUpdateUnsavedChanges(richEditor: boolean) {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
 
-    const translation = useSelector((state) => state.editor.translation);
-    const initialTranslation = useSelector(
+    const translation = useAppSelector((state) => state.editor.translation);
+    const initialTranslation = useAppSelector(
         (state) => state.editor.initialTranslation,
     );
-    const unsavedChangesExist = useSelector(
+    const unsavedChangesExist = useAppSelector(
         (state) => state.unsavedchanges.exist,
     );
-    const unsavedChangesShown = useSelector(
+    const unsavedChangesShown = useAppSelector(
         (state) => state.unsavedchanges.shown,
     );
 
     // When the translation or the initial translation changes, check for unsaved changes.
     React.useEffect(() => {
-        if (richEditor && typeof translation === 'string') {
-            return;
-        }
-
         let exist;
         if (richEditor) {
-            exist = !translation.equals(initialTranslation);
+            if (typeof translation === 'string') {
+                return;
+            }
+            exist =
+                typeof initialTranslation !== 'string' &&
+                !translation.equals(initialTranslation);
         } else {
             exist = translation !== initialTranslation;
         }
@@ -48,13 +49,14 @@ export default function useUpdateUnsavedChanges(richEditor: boolean) {
     // the translation has effectively changed.
     const prevTranslation = React.useRef(translation);
     React.useEffect(() => {
-        if (richEditor && typeof translation === 'string') {
-            return;
-        }
-
         let sameTranslation;
         if (richEditor) {
-            sameTranslation = translation.equals(prevTranslation.current);
+            if (typeof translation === 'string') {
+                return;
+            }
+            sameTranslation =
+                typeof prevTranslation.current !== 'string' &&
+                translation.equals(prevTranslation.current);
         } else {
             sameTranslation = prevTranslation.current === translation;
         }

@@ -1,10 +1,10 @@
 import * as React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { Localized } from '@fluent/react';
 
 import './ConcordanceSearch.css';
 import './Translation.css';
 
+import { useAppDispatch, useAppSelector } from 'hooks';
 import * as editor from 'core/editor';
 import * as entities from 'core/entities';
 import { GenericTranslation } from 'core/translation';
@@ -18,6 +18,7 @@ type Props = {
     sourceString: string;
     translation: MachineryTranslation;
     index: number;
+    entity: number | null;
 };
 
 /**
@@ -30,15 +31,15 @@ type Props = {
 export default function Translation(
     props: Props,
 ): React.ReactElement<React.ElementType> {
-    const { index, sourceString, translation } = props;
+    const { index, sourceString, translation, entity } = props;
 
-    const dispatch = useDispatch();
-    const isReadOnlyEditor = useSelector((state) =>
+    const dispatch = useAppDispatch();
+    const isReadOnlyEditor = useAppSelector((state) =>
         entities.selectors.isReadOnlyEditor(state),
     );
-    const locale = useSelector((state) => state.locale);
+    const locale = useAppSelector((state) => state.locale);
 
-    const copyMachineryTranslation = editor.useCopyMachineryTranslation();
+    const copyMachineryTranslation = editor.useCopyMachineryTranslation(entity);
     const copyTranslationIntoEditor = React.useCallback(() => {
         dispatch(editor.actions.selectHelperElementIndex(index));
         copyMachineryTranslation(translation);
@@ -50,10 +51,10 @@ export default function Translation(
         className += ' cannot-copy';
     }
 
-    const selectedHelperElementIndex = useSelector(
+    const selectedHelperElementIndex = useAppSelector(
         (state) => state[editor.NAME].selectedHelperElementIndex,
     );
-    const changeSource = useSelector(
+    const changeSource = useAppSelector(
         (state) => state[editor.NAME].changeSource,
     );
     const isSelected =
@@ -66,9 +67,13 @@ export default function Translation(
     const translationRef = React.useRef();
     React.useEffect(() => {
         if (selectedHelperElementIndex === index) {
+            const mediaQuery = window.matchMedia(
+                '(prefers-reduced-motion: reduce)',
+            );
+            const behavior = mediaQuery.matches ? 'auto' : 'smooth';
             // @ts-expect-error: What can be undefined here?
             translationRef.current?.scrollIntoView?.({
-                behavior: 'smooth',
+                behavior: behavior,
                 block: 'nearest',
             });
         }

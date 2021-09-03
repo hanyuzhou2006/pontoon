@@ -1,5 +1,4 @@
-import { useDispatch, useSelector } from 'react-redux';
-
+import { useAppDispatch, useAppSelector } from 'hooks';
 import * as entities from 'core/entities';
 import * as navigation from 'core/navigation';
 import * as plural from 'core/plural';
@@ -17,22 +16,22 @@ export default function useUpdateTranslationStatus(): (
     change: ChangeOperation,
     ignoreWarnings?: boolean | null | undefined,
 ) => void {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
 
-    const entity = useSelector((state) =>
+    const entity = useAppSelector((state) =>
         entities.selectors.getSelectedEntity(state),
     );
-    const locale = useSelector((state) => state.locale);
-    const parameters = useSelector((state) =>
+    const locale = useAppSelector((state) => state.locale);
+    const parameters = useAppSelector((state) =>
         navigation.selectors.getNavigationParams(state),
     );
-    const pluralForm = useSelector((state) =>
+    const pluralForm = useAppSelector((state) =>
         plural.selectors.getPluralForm(state),
     );
-    const nextEntity = useSelector((state) =>
+    const nextEntity = useAppSelector((state) =>
         entities.selectors.getNextEntity(state),
     );
-    const router = useSelector((state) => state.router);
+    const router = useAppSelector((state) => state.router);
 
     return (
         translationId: number,
