@@ -12,6 +12,7 @@ import * as user from 'core/user';
 import type { LocaleState } from 'core/locale';
 import type { ProjectState } from 'core/project';
 import type { UserState } from 'core/user';
+import { RootState } from 'store';
 
 type Props = {
     isTranslator: boolean;
@@ -121,7 +122,7 @@ export class InteractiveTourBase extends React.Component<InternalProps, State> {
                 },
             },
             {
-                selector: '#app > .panel-list',
+                selector: '#app > .main-content > .panel-list',
                 content: (
                     <div>
                         <Localized id='interactivetour-InteractiveTour--string-list-title'>
@@ -151,7 +152,7 @@ export class InteractiveTourBase extends React.Component<InternalProps, State> {
                 },
             },
             {
-                selector: '#app > .panel-list',
+                selector: '#app > .main-content > .panel-list',
                 content: (
                     <div>
                         <Localized id='interactivetour-InteractiveTour--filters-title'>
@@ -175,7 +176,7 @@ export class InteractiveTourBase extends React.Component<InternalProps, State> {
                 },
             },
             {
-                selector: '#app > .panel-content',
+                selector: '#app > .main-content > .panel-content',
                 content: (
                     <div>
                         <Localized id='interactivetour-InteractiveTour--editor-title'>
@@ -194,7 +195,7 @@ export class InteractiveTourBase extends React.Component<InternalProps, State> {
                 ),
             },
             {
-                selector: '#app > .panel-content .editor',
+                selector: '#app > .main-content > .panel-content .editor',
                 content: (
                     <div>
                         <Localized id='interactivetour-InteractiveTour--submit-title'>
@@ -236,7 +237,8 @@ export class InteractiveTourBase extends React.Component<InternalProps, State> {
                 ),
             },
             {
-                selector: '#app > .panel-content .entity-details .history',
+                selector:
+                    '#app > .main-content > .panel-content .entity-details .history',
                 content: (
                     <div>
                         <Localized id='interactivetour-InteractiveTour--history-title'>
@@ -256,7 +258,7 @@ export class InteractiveTourBase extends React.Component<InternalProps, State> {
             },
             {
                 selector:
-                    '#app > .panel-content .entity-details .third-column .top .react-tabs',
+                    '#app > .main-content > .panel-content .entity-details .third-column .top .react-tabs',
                 content: (
                     <div>
                         <Localized id='interactivetour-InteractiveTour--terms-title'>
@@ -279,7 +281,7 @@ export class InteractiveTourBase extends React.Component<InternalProps, State> {
             },
             {
                 selector:
-                    '#app > .panel-content .entity-details .third-column .top .react-tabs',
+                    '#app > .main-content > .panel-content .entity-details .third-column .top .react-tabs',
                 content: (
                     <div>
                         <Localized id='interactivetour-InteractiveTour--comments-title'>
@@ -302,7 +304,7 @@ export class InteractiveTourBase extends React.Component<InternalProps, State> {
             },
             {
                 selector:
-                    '#app > .panel-content .entity-details .third-column .bottom .react-tabs',
+                    '#app > .main-content > .panel-content .entity-details .third-column .bottom .react-tabs',
                 content: (
                     <div>
                         <Localized id='interactivetour-InteractiveTour--machinery-title'>
@@ -325,7 +327,7 @@ export class InteractiveTourBase extends React.Component<InternalProps, State> {
             },
             {
                 selector:
-                    '#app > .panel-content .entity-details .third-column .bottom .react-tabs',
+                    '#app > .main-content > .panel-content .entity-details .third-column .bottom .react-tabs',
                 content: (
                     <div>
                         <Localized id='interactivetour-InteractiveTour--locales-title'>
@@ -398,7 +400,7 @@ export class InteractiveTourBase extends React.Component<InternalProps, State> {
     }
 }
 
-const mapStateToProps = (state: Record<string, any>): Props => {
+const mapStateToProps = (state: RootState): Props => {
     return {
         isTranslator: user.selectors.isTranslator(state),
         locale: state[locale.NAME],

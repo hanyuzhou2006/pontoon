@@ -290,12 +290,26 @@ def serialized_notifications(self):
         is_comment = False
 
         if hasattr(notification.actor, "slug"):
-            actor = {
-                "anchor": notification.actor.name,
-                "url": reverse(
-                    "pontoon.projects.project", kwargs={"slug": notification.actor.slug}
-                ),
-            }
+            if "new string" in notification.verb and self.profile.custom_homepage:
+                actor = {
+                    "anchor": notification.actor.name,
+                    "url": reverse(
+                        "pontoon.translate.locale.agnostic",
+                        kwargs={
+                            "slug": notification.actor.slug,
+                            "part": "all-resources",
+                        },
+                    )
+                    + "?status=missing,fuzzy",
+                }
+            else:
+                actor = {
+                    "anchor": notification.actor.name,
+                    "url": reverse(
+                        "pontoon.projects.project",
+                        kwargs={"slug": notification.actor.slug},
+                    ),
+                }
         elif hasattr(notification.actor, "email"):
             actor = {
                 "anchor": notification.actor.name_or_email,
@@ -722,8 +736,8 @@ class Locale(AggregatedStats):
         validators=[validate_cldr],
         help_text="""
         A comma separated list of
-        <a href="http://www.unicode.org/cldr/charts/dev/supplemental/language_plural_rules.html">
-        CLDR plural rules</a>, where 0 represents zero, 1 one, 2 two, 3 few, 4 many, and 5 other.
+        <a href="http://www.unicode.org/cldr/charts/latest/supplemental/language_plural_rules.html">
+        CLDR plural categories</a>, where 0 represents zero, 1 one, 2 two, 3 few, 4 many, and 5 other.
         E.g. 1,5
         """,
     )
@@ -2502,7 +2516,10 @@ class Entity(DirtyFieldsMixin, models.Model):
     resource = models.ForeignKey(Resource, models.CASCADE, related_name="entities")
     string = models.TextField()
     string_plural = models.TextField(blank=True)
-    key = models.TextField(blank=True)
+    # Unique identifier, used to compare DB and VCS objects
+    key = models.TextField()
+    # Format-specific value, used to provide more context
+    context = models.TextField(blank=True)
     comment = models.TextField(blank=True)
     group_comment = models.TextField(blank=True)
     resource_comment = models.TextField(blank=True)
@@ -2896,6 +2913,7 @@ class Entity(DirtyFieldsMixin, models.Model):
                     "original_plural": original_plural,
                     "machinery_original": entity.string,
                     "key": entity.cleaned_key,
+                    "context": entity.context,
                     "path": entity.resource.path,
                     "project": entity.resource.project.serialize(),
                     "format": entity.resource.format,

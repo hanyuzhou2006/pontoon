@@ -1,14 +1,14 @@
 import * as React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 
+import { useAppDispatch, useAppSelector } from 'hooks';
 import * as editor from 'core/editor';
 
 export default function useReplaceSelectionContent(
     updateTranslationSelectionWith: (...args: Array<any>) => void,
 ) {
-    const dispatch = useDispatch();
-    const changeSource = useSelector((state) => state.editor.changeSource);
-    const selectionReplacementContent = useSelector(
+    const dispatch = useAppDispatch();
+    const changeSource = useAppSelector((state) => state.editor.changeSource);
+    const selectionReplacementContent = useAppSelector(
         (state) => state.editor.selectionReplacementContent,
     );
 

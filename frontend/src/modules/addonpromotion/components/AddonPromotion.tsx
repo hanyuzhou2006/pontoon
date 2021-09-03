@@ -7,6 +7,7 @@ import './AddonPromotion.css';
 import * as user from 'core/user';
 
 import type { UserState } from 'core/user';
+import { RootState } from 'store';
 
 type Props = {
     user: UserState;
@@ -158,7 +159,7 @@ export class AddonPromotionBase extends React.Component<InternalProps, State> {
     }
 }
 
-const mapStateToProps = (state: Record<string, any>): Props => {
+const mapStateToProps = (state: RootState): Props => {
     return {
         user: state[user.NAME],
     };

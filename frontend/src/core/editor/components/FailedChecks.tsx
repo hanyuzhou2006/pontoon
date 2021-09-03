@@ -1,13 +1,14 @@
 import * as React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { Localized } from '@fluent/react';
 
 import './FailedChecks.css';
 
+import { useAppDispatch, useAppSelector } from 'hooks';
 import * as user from 'core/user';
 
 import { actions, useUpdateTranslationStatus } from '..';
 
+import type { EditorState } from 'core/editor';
 import type { UserState } from 'core/user';
 
 type FailedChecksProps = {
@@ -21,13 +22,13 @@ type FailedChecksProps = {
 export default function FailedChecks(
     props: FailedChecksProps,
 ): null | React.ReactElement<'div'> {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
 
-    const errors = useSelector((state) => state.editor.errors);
-    const warnings = useSelector((state) => state.editor.warnings);
-    const source = useSelector((state) => state.editor.source);
-    const userState = useSelector((state) => state.user);
-    const isTranslator = useSelector(user.selectors.isTranslator);
+    const errors = useAppSelector((state) => state.editor.errors);
+    const warnings = useAppSelector((state) => state.editor.warnings);
+    const source = useAppSelector((state) => state.editor.source);
+    const userState = useAppSelector((state) => state.user);
+    const isTranslator = useAppSelector(user.selectors.isTranslator);
 
     const updateTranslationStatus = useUpdateTranslationStatus();
 
@@ -90,7 +91,7 @@ export default function FailedChecks(
     );
 }
 type MainActionProps = {
-    source: string;
+    source: EditorState['source'];
     user: UserState;
     isTranslator: boolean;
     errors: Array<string>;

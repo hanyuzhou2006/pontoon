@@ -1,9 +1,10 @@
 import * as React from 'react';
-import { useDispatch, useSelector, useStore } from 'react-redux';
+import { useStore } from 'react-redux';
 import { push } from 'connected-react-router';
 
 import './Navigation.css';
 
+import { useAppDispatch, useAppSelector } from 'hooks';
 import * as locale from 'core/locale';
 import * as navigation from 'core/navigation';
 import * as project from 'core/project';
@@ -137,18 +138,18 @@ export default function Navigation(): React.ReactElement<
     typeof NavigationBase
 > {
     const state = {
-        locale: useSelector((state) => state[locale.NAME]),
-        parameters: useSelector((state) =>
+        locale: useAppSelector((state) => state[locale.NAME]),
+        parameters: useAppSelector((state) =>
             navigation.selectors.getNavigationParams(state),
         ),
-        project: useSelector((state) => state[project.NAME]),
-        resources: useSelector((state) => state[resource.NAME]),
+        project: useAppSelector((state) => state[project.NAME]),
+        resources: useAppSelector((state) => state[resource.NAME]),
     };
 
     return (
         <NavigationBase
             {...state}
-            dispatch={useDispatch()}
+            dispatch={useAppDispatch()}
             store={useStore()}
         />
     );

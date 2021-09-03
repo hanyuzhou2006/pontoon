@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 
+import { useAppDispatch, useAppSelector } from 'hooks';
 import * as editor from 'core/editor';
 import * as entities from 'core/entities';
 import { fluent } from 'core/utils';
@@ -20,17 +20,17 @@ type Props = {
  * overwritten, to handle the conversion from AST to string and back.
  */
 export default function RichEditor(props: Props): React.ReactElement<any> {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
 
     const sendTranslation = editor.useSendTranslation();
     const updateTranslation = editor.useUpdateTranslation();
 
-    const translation = useSelector((state) => state.editor.translation);
-    const entity = useSelector((state) =>
+    const translation = useAppSelector((state) => state.editor.translation);
+    const entity = useAppSelector((state) =>
         entities.selectors.getSelectedEntity(state),
     );
-    const changeSource = useSelector((state) => state.editor.changeSource);
-    const locale = useSelector((state) => state.locale);
+    const changeSource = useAppSelector((state) => state.editor.changeSource);
+    const locale = useAppSelector((state) => state.locale);
 
     /**
      * Hook that makes sure the translation is a Fluent message.
