@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { useSelector } from 'react-redux';
 import { Localized } from '@fluent/react';
 
 import { useAppSelector } from 'hooks';

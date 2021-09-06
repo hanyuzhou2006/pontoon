@@ -1,21 +1,32 @@
-import { applyMiddleware, compose, createStore } from 'redux';
-import thunkMiddleware from 'redux-thunk';
+import { configureStore, ThunkAction, Action } from '@reduxjs/toolkit';
 import { createLogger } from 'redux-logger';
 import { routerMiddleware } from 'connected-react-router';
 
 import history from './historyInstance';
 import createRootReducer from './rootReducer';
 
-const middlewares = [routerMiddleware(history), thunkMiddleware];
+const store = configureStore({
+    reducer: createRootReducer(history),
+    middleware: (getDefaultMiddleware) => {
+        const middleware = getDefaultMiddleware({
+            serializableCheck: false,
+            immutableCheck: false,
+        }).prepend(routerMiddleware(history));
+        if (process.env.NODE_ENV === 'development') {
+            middleware.push(createLogger());
+        }
+        return middleware;
+    },
+});
 
-// Log actions only in development.
-if (process.env.NODE_ENV === 'development') {
-    const loggerMiddleware = createLogger();
-    middlewares.push(loggerMiddleware);
-}
+// Infer the `RootState` and `AppDispatch` types from the store itself
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
+export type AppThunk<ReturnType = void> = ThunkAction<
+    ReturnType,
+    RootState,
+    unknown,
+    Action<string>
+>;
 
-export default createStore(
-    createRootReducer(history),
-    {}, // initial state
-    compose(applyMiddleware(...middlewares)),
-);
+export default store;
