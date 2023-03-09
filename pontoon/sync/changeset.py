@@ -3,7 +3,7 @@ import logging
 from collections import defaultdict
 from django.contrib.auth.models import User
 from django.db import connection
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from django.template.defaultfilters import pluralize
 from notifications.signals import notify
 
@@ -52,6 +52,7 @@ class ChangeSet:
         self.entities_to_update = []
         self.translations_to_update = {}
         self.translations_to_create = []
+        self.rejected_translations = []
         self.actions_to_log = []
 
         self.commit_authors_per_locale = defaultdict(list)
@@ -155,6 +156,9 @@ class ChangeSet:
             valid_translations = self.bulk_check_translations()
             self.bulk_create_translation_memory_entries(valid_translations)
 
+            # Remove any TM entries of translations that got rejected
+            self.bulk_remove_translation_memory_entries()
+
     def execute_update_vcs(self):
         resources = self.vcs_project.resources
         changed_resources = set()
@@ -163,8 +167,8 @@ class ChangeSet:
             changed_resources.add(resources[db_entity.resource.path])
             vcs_translation = vcs_entity.translations[locale_code]
             db_translations = db_entity.translation_set.filter(
-                approved=True, locale__code=locale_code
-            )
+                Q(approved=True) | Q(pretranslated=True)
+            ).filter(locale__code=locale_code)
             vcs_translation.update_from_db(db_translations)
 
             # Track which translators were involved.
@@ -210,7 +214,8 @@ class ChangeSet:
 
             verb = "updated with {} new string{}".format(count, pluralize(count))
             contributors = User.objects.filter(
-                translation__entity__resource__project=self.db_project
+                translation__entity__resource__project=self.db_project,
+                profile__new_string_notifications=True,
             ).distinct()
 
             for contributor in contributors:
@@ -279,7 +284,11 @@ class ChangeSet:
             # Modify existing translation.
             if db_translation:
                 new_action = None
-                if not db_translation.approved and not vcs_translation.fuzzy:
+                if (
+                    not db_translation.approved
+                    and not db_translation.pretranslated
+                    and not vcs_translation.fuzzy
+                ):
                     new_action = ActionLog(
                         action_type=ActionLog.ActionType.TRANSLATION_APPROVED,
                         performed_by=user or self.sync_user,
@@ -298,7 +307,7 @@ class ChangeSet:
                         self.actions_to_log.append(new_action)
                 if db_translation.fuzzy:
                     fuzzy_translations.append(db_translation)
-                else:
+                elif not db_translation.pretranslated:
                     approved_translations.append(db_translation)
 
             # Create new translation.
@@ -351,6 +360,7 @@ class ChangeSet:
                     )
 
                 if translation.is_dirty():
+                    self.rejected_translations.append(translation)
                     self.translations_to_update[translation.pk] = translation
                     self.actions_to_log.append(new_action)
 
@@ -377,7 +387,9 @@ class ChangeSet:
 
         for locale in locale_entities.keys():
             entities_qs = (
-                Entity.objects.filter(pk__in=locale_entities[locale],)
+                Entity.objects.filter(
+                    pk__in=locale_entities[locale],
+                )
                 .prefetch_related(
                     Prefetch(
                         "translation_set",
@@ -523,6 +535,14 @@ class ChangeSet:
 
         TranslationMemoryEntry.objects.bulk_create(memory_entries)
 
+    def bulk_remove_translation_memory_entries(self):
+        """
+        Remove Translation Memory entries of translations that got rejected
+        """
+        TranslationMemoryEntry.objects.filter(
+            translation__in=self.rejected_translations
+        ).delete()
+
     def bulk_check_translations(self):
         """
         Run checks on all changed translations from supported resources
@@ -534,7 +554,10 @@ class ChangeSet:
         bulk_run_checks(Translation.objects.for_checks().filter(pk__in=changed_pks))
 
         valid_translations = set(
-            Translation.objects.filter(pk__in=changed_pks, errors__isnull=True,)
+            Translation.objects.filter(
+                pk__in=changed_pks,
+                errors__isnull=True,
+            )
             .values_list("pk", flat=True)
             .order_by("pk")
         )

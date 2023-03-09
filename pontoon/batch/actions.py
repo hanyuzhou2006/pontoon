@@ -48,12 +48,16 @@ def approve_translations(form, user, translations, locale):
 
     """
     invalid_translation_pks = list(
-        translations.filter(approved=False, errors__isnull=False,).values_list(
-            "pk", flat=True
-        )
+        translations.filter(
+            approved=False,
+            errors__isnull=False,
+        ).values_list("pk", flat=True)
     )
 
-    translations = translations.filter(approved=False, errors__isnull=True,)
+    translations = translations.filter(
+        approved=False,
+        errors__isnull=True,
+    )
     changed_translation_pks = list(translations.values_list("pk", flat=True))
 
     latest_translation_pk = None
@@ -61,7 +65,8 @@ def approve_translations(form, user, translations, locale):
         latest_translation_pk = translations.last().pk
 
     count, translated_resources, changed_entities = utils.get_translations_info(
-        translations, locale,
+        translations,
+        locale,
     )
 
     # Log approving actions
@@ -83,6 +88,7 @@ def approve_translations(form, user, translations, locale):
         rejected=False,
         rejected_user=None,
         rejected_date=None,
+        pretranslated=False,
         fuzzy=False,
     )
 
@@ -113,7 +119,8 @@ def reject_translations(form, user, translations, locale):
         rejected=False,
     )
     count, translated_resources, changed_entities = utils.get_translations_info(
-        suggestions, locale,
+        suggestions,
+        locale,
     )
     TranslationMemoryEntry.objects.filter(translation__in=suggestions).delete()
 
@@ -137,6 +144,7 @@ def reject_translations(form, user, translations, locale):
         approved=False,
         approved_user=None,
         approved_date=None,
+        pretranslated=False,
         fuzzy=False,
     )
 
@@ -170,7 +178,8 @@ def replace_translations(form, user, translations, locale):
     ) = utils.find_and_replace(translations, find, replace, user)
 
     count, translated_resources, changed_entities = utils.get_translations_info(
-        old_translations, locale,
+        old_translations,
+        locale,
     )
 
     # Log rejecting actions
@@ -184,6 +193,10 @@ def replace_translations(form, user, translations, locale):
     ]
     ActionLog.objects.bulk_create(actions_to_log)
 
+    # Remove any TM entries of old translations that will get rejected.
+    # Must be executed before translations set changes.
+    TranslationMemoryEntry.objects.filter(translation__in=old_translations).delete()
+
     # Deactivate and unapprove old translations
     old_translations.update(
         active=False,
@@ -193,11 +206,14 @@ def replace_translations(form, user, translations, locale):
         rejected=True,
         rejected_user=user,
         rejected_date=timezone.now(),
+        pretranslated=False,
         fuzzy=False,
     )
 
     # Create new translations
-    changed_translations = Translation.objects.bulk_create(translations_to_create,)
+    changed_translations = Translation.objects.bulk_create(
+        translations_to_create,
+    )
 
     # Log creating actions
     actions_to_log = [

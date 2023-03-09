@@ -29,7 +29,9 @@ urlpatterns = [
     ),
     # AJAX: Get locale stats used in All Resources part
     path(
-        "teams/<locale:locale>/stats/", views.locale_stats, name="pontoon.locale.stats",
+        "teams/<locale:locale>/stats/",
+        views.locale_stats,
+        name="pontoon.locale.stats",
     ),
     # AJAX: Get locale-project pages/paths with stats
     path(
@@ -61,11 +63,25 @@ urlpatterns = [
     path("perform-checks/", views.perform_checks, name="pontoon.perform.checks"),
     path("get-history/", views.get_translation_history, name="pontoon.get_history"),
     path(
-        "get-team-comments/", views.get_team_comments, name="pontoon.get_team_comments",
+        "get-team-comments/",
+        views.get_team_comments,
+        name="pontoon.get_team_comments",
     ),
-    path("add-comment/", views.add_comment, name="pontoon.add_comment",),
-    path("pin-comment/", views.pin_comment, name="pontoon.pin_comment",),
-    path("unpin-comment/", views.unpin_comment, name="pontoon.unpin_comment",),
+    path(
+        "add-comment/",
+        views.add_comment,
+        name="pontoon.add_comment",
+    ),
+    path(
+        "pin-comment/",
+        views.pin_comment,
+        name="pontoon.pin_comment",
+    ),
+    path(
+        "unpin-comment/",
+        views.unpin_comment,
+        name="pontoon.unpin_comment",
+    ),
     path(
         "other-locales/",
         views.get_translations_from_other_locales,
@@ -78,4 +94,5 @@ urlpatterns = [
     ),
     path("upload/", views.upload, name="pontoon.upload"),
     path("user-data/", views.user_data, name="pontoon.user_data"),
+    path("get-sibling-entities/", views.get_sibling_entities),
 ]

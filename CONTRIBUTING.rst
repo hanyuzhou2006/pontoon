@@ -10,26 +10,35 @@ Pontoon source code is available via GitHub:
 https://github.com/mozilla/pontoon
 
 
-Bugs
-====
+Issues
+======
 
-All bugs are tracked in `<https://bugzilla.mozilla.org/>`_.
+Our work is tracked in `GitHub <https://github.com/mozilla/pontoon/issues>`_.
 
-Write up a new bug:
-
-https://bugzilla.mozilla.org/enter_bug.cgi?product=Webtools&component=Pontoon
+Report a `new issue <https://github.com/mozilla/pontoon/issues/new>`_:
 
 
 Docker
 ======
 
-Everything runs in a Docker container. Thus Pontoon requires fewer things to get
-started and you're guaranteed to have the same setup as everyone else and it
-solves some other problems, too.
+While the front-end (JavaScript) build and tests use the host environment for development,
+the back-end systems (Python/Django, databases, etc.) run in Docker containers.
+For production use, also the front-end is built in a container.
+Thus Pontoon requires fewer things to get started
+and you're guaranteed to have the same server setup as everyone else.
 
 If you're not familiar with `Docker <https://docs.docker.com/>`_ and
 `docker-compose <https://docs.docker.com/compose/overview/>`_, it's worth
 reading up on.
+
+
+JavaScript setup
+================
+
+For working on the front-end, you need at least Node.js 14 and npm 7
+(`installation instructions <https://docs.npmjs.com/downloading-and-installing-node-js-and-npm>`_).
+Parts of the front-end use `npm workspaces <https://docs.npmjs.com/cli/v7/using-npm/workspaces>`_,
+which are not supported by earlier npm versions.
 
 
 Database
@@ -98,6 +107,12 @@ To format the Python and the JavaScript code at once you can use:
 
 Code formatting is explained in more detail in the following sections.
 
+To run the required linters on the Python and the Javascript code at once you can use:
+
+.. code-block:: shell
+
+    $ make lint
+
 
 Python code conventions
 =======================
@@ -115,6 +130,12 @@ Alternatively, you can format your code using:
 
     $ make black
 
+We also require Python code to use newer syntax of Python. You can upgrade automatically by running:
+
+.. code-block:: shell
+
+    $ make pyupgrade
+
 Additionally, we use a linter to verify that imports are correct. You can run it with:
 
 .. code-block:: shell
@@ -128,7 +149,7 @@ ignore that error. Note that in most cases, it is better to fix the issues than 
 Javascript code conventions
 ===========================
 
-Our Javascript code is automatically formatted using `Prettier <https://prettier.io/docs/en/index.html>_`.
+Our Javascript code is automatically formatted using `Prettier <https://prettier.io/docs/en/index.html>`_.
 We enforce that in our Continuous Integration, so you will need to run
 prettier on your code before sending it for review.
 
@@ -139,7 +160,7 @@ Alternatively, you can format your code using:
 
 .. code-block:: shell
 
-    $ make prettier 
+    $ make prettier
 
 Additionally, there are linting rules that are defined in our
 ``.eslintrc.js`` file. To run the linter, do:
@@ -151,7 +172,7 @@ Additionally, there are linting rules that are defined in our
 In the rare case when you cannot fix an eslint error, use ``// eslint-disable`` to make the linter
 ignore that error. Note that in most cases, it is better to fix the issues than ignore them.
 
-For more specifics about the ```frontend`` folder, look at the README.md file there.
+For more specifics about the ``translate`` folder, look at the README.md file there.
 
 
 Git conventions
@@ -159,14 +180,15 @@ Git conventions
 
 The first line is a summary of the commit. It should start with one of the following::
 
-    Fix bug XXXXXXX
+    Fix #1234
 
 or::
 
-    Bug XXXXXXX
+    #1234
 
 
-The first, when it lands, will cause the bug to be closed. The second one does not.
+The first, when it lands, will cause the issue to be closed. The second one just adds
+a cross-reference.
 
 After that, the commit should explain *why* the changes are being made and any
 notes that future readers should know for context or be aware of.
@@ -185,7 +207,7 @@ We follow `The seven rules of a great Git commit message <https://chris.beams.io
 Pull requests
 =============
 
-Pull request summary should indicate the bug the pull request addresses.
+Pull request summary should indicate the issue the pull request addresses.
 
 Pull request descriptions should cover at least some of the following:
 
@@ -206,10 +228,10 @@ Style nits should be covered by linting as much as possible.
 Code reviews should review the changes in the context of the rest of the system.
 
 
-Dependencies
-============
+Python Dependencies
+===================
 
-Direct dependencies for Pontoon are distributed across three files:
+Direct dependencies for Pontoon are distributed across four files:
 
 1. ``requirements/default.in``: Running Pontoon in production
 2. ``requirements/dev.in``: Development
@@ -233,7 +255,7 @@ Once you are done adding, removing or updating requirements, rebuild your docker
 
 .. code-block:: shell
 
-    $ make build
+    $ make build-server
 
 If there are problems, it'll tell you.
 
@@ -287,7 +309,7 @@ To run the entire test suite, do:
     $ make test
 
 
-To run only the ``frontend`` tests:
+To run only the ``translate`` tests:
 
 .. code-block:: shell
 
@@ -373,21 +395,3 @@ steps, as they don't affect your setup if nothing has changed:
 
    # Run database migrations.
    python manage.py migrate
-
-
-Building front-end resources
-============================
-
-We use webpack to build our JavaScript files for some pages. While `make build` will build
-those files for you, you might want to rebuild them while programming on the front. To build
-the files just once, run:
-
-.. code-block:: shell
-
-    $ make build-frontend
-
-If you want to have those files be built automatically when you make changes, you can run:
-
-.. code-block:: shell
-
-    $ make build-frontend-w

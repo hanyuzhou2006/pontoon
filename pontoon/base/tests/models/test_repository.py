@@ -4,6 +4,9 @@ from urllib.parse import urlparse
 
 import pytest
 
+from django.core.exceptions import ValidationError
+
+from pontoon.base.models import repository_url_validator
 from pontoon.test.factories import ProjectLocaleFactory
 
 
@@ -58,7 +61,11 @@ def test_repo_locale_checkout_path(settings, repo_git, locale_a):
     repo_git.save()
     assert repo_git.locale_checkout_path(locale_a) == (
         "%s/projects/%s/path/%s"
-        % (settings.MEDIA_ROOT, repo_git.project.slug, locale_a.code,)
+        % (
+            settings.MEDIA_ROOT,
+            repo_git.project.slug,
+            locale_a.code,
+        )
     )
 
 
@@ -97,7 +104,8 @@ def test_repo_url_for_path(project_locale_a, repo_git, locale_b):
     repo's project that matches the given path.
     """
     ProjectLocaleFactory.create(
-        project=repo_git.project, locale=locale_b,
+        project=repo_git.project,
+        locale=locale_b,
     )
     repo_git.url = "https://example.com/path/to/{locale_code}/"
     repo_git.save()
@@ -147,7 +155,8 @@ def test_repo_pull_multi_locale(project_locale_a, repo_git, locale_b):
     """
     locale_a = project_locale_a.locale
     ProjectLocaleFactory.create(
-        project=repo_git.project, locale=locale_b,
+        project=repo_git.project,
+        locale=locale_b,
     )
 
     with patch("pontoon.sync.vcs.repositories.update_from_vcs") as m_update_from_vcs:
@@ -216,3 +225,18 @@ def test_repo_commit_multi_locale(repo_git):
             "https://example.com/for_path",
         )
         assert repo_git.url_for_path.call_args[0] == ("path",)
+
+
+def test_repository_url_validator():
+    """
+    The validity of the Repository URL.
+    """
+    regular_url = "https://example.com/"
+    assert repository_url_validator(regular_url) is None
+
+    git_scp_url = "git@github.com:user/repository.git"
+    assert repository_url_validator(git_scp_url) is None
+
+    invalid_url = "--evil=parameter"
+    with pytest.raises(ValidationError):
+        repository_url_validator(invalid_url)

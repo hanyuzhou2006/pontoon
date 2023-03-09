@@ -5,6 +5,7 @@ pip-log.txt
 docs/_gh-pages
 build.py
 build
+dist
 .DS_Store
 node_modules
 *-min.css
@@ -27,10 +28,6 @@ venv
 coverage/
 
 # Docker
-.docker-build
-docker/config/webapp.env
-docker/config/webapp.env-e
-
-# Webpack
-/assets/
-webpack-stats.json
+.server-build
+docker/config/server.env
+docker/config/server.env-e

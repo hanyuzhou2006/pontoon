@@ -124,7 +124,7 @@ def _get_translated_resources(locales, project, resources):
                     "locale": locale,
                     "approved_strings": (i + 2) ** 3,
                     "unreviewed_strings": (i + 1) ** 3,
-                    "fuzzy_strings": i ** 3,
+                    "pretranslated_strings": i ** 3,
                 }
             )
     return _kwargs
@@ -226,7 +226,9 @@ def _get_latest_translation(latest, kwargs):
 
 
 def _create_translated_resources(
-    factories, translations, translated_resource_kwargs,
+    factories,
+    translations,
+    translated_resource_kwargs,
 ):
     # creates translated resources from pre-calculated kwargs
     latest = _get_latest_translations(translations)

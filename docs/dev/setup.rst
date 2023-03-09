@@ -17,7 +17,9 @@ Prerequisites
 2. Install `docker-compose <https://docs.docker.com/compose/install/>`_. You need
    1.10 or higher.
 
-3. Install `make <https://www.gnu.org/software/make/>`_ using either your
+3. Install `Node.js 14 and npm 7 or later <https://docs.npmjs.com/downloading-and-installing-node-js-and-npm>`_.
+
+4. Install `make <https://www.gnu.org/software/make/>`_ using either your
    system's package manager (Linux) or Xcode command line developer tools (OSX).
    On Windows, you can use `MozillaBuild <https://wiki.mozilla.org/MozillaBuild>`_.
 
@@ -39,21 +41,13 @@ Quickstart
 
      $ make build
 
-   That will build the containers required for development: base and
-   webapp.
-
-   .. Warning::
-
-        On M1 MacBooks, a workaround is currently required for successful
-        operations: Add a ``platform: linux/amd64`` specifier under the
-        ``webapp`` service of ``docker-compose.yml``. This avoids a
-        segmentation fault in curl due to the libssl version used by
-        images based on Debian Buster.
+   That will install Pontoon's JS dependencies,
+   build the frontend packages, and build the server container.
 
    .. Note::
 
         If you want to share your development instance in your local network,
-        set SITE_URL to bind the webapp to any address you like, e.g.
+        set SITE_URL to bind the server to any address you like, e.g.
         ``make build SITE_URL="http://192.168.1.14:8000"``.
 
 
@@ -64,18 +58,18 @@ Quickstart
    .. Note::
 
         The first time you run this, the PostgreSQL container needs to do
-        some work before it becomes available to the webapp container. Hence,
-        the webapp might not be able to perform things like migrations.
+        some work before it becomes available to the server container. Hence,
+        the server might not be able to perform things like migrations.
         You can simply wait for the postgresql container to report that it's
         ready, then abort the process, then restart it. That should let the
-        webapp do all its setup as expected.
+        server do all its setup as expected.
 
         Alternatively, you can run ``docker-compose up postgresql`` and wait
         until it reports that the database is ready, then stop that and run
         ``make run``.
 
 
-4. Finally, you need to run some setup steps, while the webapp is running::
+4. Finally, you need to run some setup steps, while the server is running::
 
       $ make setup
 
@@ -83,16 +77,6 @@ Quickstart
    account settings.
 
 The app should now be available at http://localhost:8000 or the custom SITE_URL.
-
-   .. Warning::
-
-        After you execute ``make run``, the console output might trick you into
-        accessing Pontoon in the browser at http://localhost:3000/. Note that
-        the URL only refers to the frontend app, which is not meant to be used
-        standalone.
-
-        To access Pontoon app, you should use http://localhost:8000 or the
-        custom SITE_URL.
 
 And with that, you're ready to start :doc:`contributing`!
 

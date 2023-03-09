@@ -181,7 +181,11 @@ def ajax_permissions(request, locale):
     contributors_emails = {
         contributor.email
         for contributor in users_with_translations_counts(
-            None, Q(locale=locale) & Q(user__isnull=False), None
+            None,
+            Q(locale=locale)
+            & Q(user__isnull=False)
+            & Q(user__profile__system_user=False),
+            None,
         )
     }
 
@@ -217,7 +221,7 @@ def request_item(request, locale=None):
         # Validate projects
         project_list = (
             Project.objects.visible()
-            .visible_for(request.user)
+            .visible_for(user)
             .filter(slug__in=slug_list, can_be_requested=True)
         )
         if not project_list:
@@ -266,18 +270,19 @@ def request_item(request, locale=None):
     if settings.PROJECT_MANAGERS[0] != "":
         template = get_template("teams/email_request_item.jinja")
         mail_body = template.render(payload)
+        cc = {user.contact_email}
+        if locale:
+            cc.update(
+                set(locale.managers_group.user_set.values_list("email", flat=True))
+            )
 
         EmailMessage(
             subject=mail_subject,
             body=mail_body,
             from_email=settings.LOCALE_REQUEST_FROM_EMAIL,
             to=settings.PROJECT_MANAGERS,
-            cc=locale.managers_group.user_set.exclude(pk=user.pk).values_list(
-                "email", flat=True
-            )
-            if locale
-            else "",
-            reply_to=[user.email],
+            cc=cc,
+            reply_to=[user.contact_email],
         ).send()
     else:
         raise ImproperlyConfigured(
@@ -296,6 +301,22 @@ class LocaleContributorsView(ContributorsMixin, DetailView):
     model = Locale
     slug_field = "code"
     slug_url_kwarg = "locale"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(locale=self.object, **kwargs)
+        contributors = context["contributors"]
+        context["managers"] = [
+            c for c in contributors if c.user_locale_role == "Manager"
+        ]
+        context["translators"] = [
+            c for c in contributors if c.user_locale_role == "Translator"
+        ]
+        context["regular_contributors"] = [
+            c
+            for c in contributors
+            if c not in context["managers"] and c not in context["translators"]
+        ]
+        return context
 
     def get_context_object_name(self, obj):
         return "locale"

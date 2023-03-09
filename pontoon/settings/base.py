@@ -30,12 +30,6 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "False") != "False"
 
 HEROKU_DEMO = os.environ.get("HEROKU_DEMO", "False") != "False"
 
-# Automatically log in the user with username 'AUTO_LOGIN_USERNAME'
-# and password 'AUTO_LOGIN_PASSWORD'
-AUTO_LOGIN = os.environ.get("AUTO_LOGIN", "False") != "False"
-AUTO_LOGIN_USERNAME = os.environ.get("AUTO_LOGIN_USERNAME", None)
-AUTO_LOGIN_PASSWORD = os.environ.get("AUTO_LOGIN_PASSWORD", None)
-
 LOGOUT_REDIRECT_URL = "/"
 
 ADMINS = MANAGERS = (
@@ -44,6 +38,22 @@ ADMINS = MANAGERS = (
 
 # A list of project manager email addresses to send project requests to
 PROJECT_MANAGERS = os.environ.get("PROJECT_MANAGERS", "").split(",")
+
+
+def _get_site_url_netloc():
+    from urllib.parse import urlparse
+    from django.conf import settings
+
+    return urlparse(settings.SITE_URL).netloc
+
+
+def _default_from_email():
+    return os.environ.get(
+        "DEFAULT_FROM_EMAIL", f"Pontoon <noreply@{_get_site_url_netloc()}>"
+    )
+
+
+DEFAULT_FROM_EMAIL = lazy(_default_from_email, str)()
 
 # Email from which new locale requests are sent.
 LOCALE_REQUEST_FROM_EMAIL = os.environ.get(
@@ -64,7 +74,8 @@ if not DEV and not DEBUG:
         DATABASES["default"]["OPTIONS"] = {}
     DATABASES["default"]["OPTIONS"]["sslmode"] = "require"
 
-FRONTEND_DIR = os.path.join(ROOT, "frontend")
+TAGADMIN_DIR = os.path.join(ROOT, "tag-admin")
+TRANSLATE_DIR = os.path.join(ROOT, "translate")
 
 # Absolute path to the directory static files should be collected to.
 # Don't put anything in this directory yourself; store your static files
@@ -91,6 +102,15 @@ BROKER_URL = os.environ.get("RABBITMQ_URL", None)
 # Google Cloud Translation API key
 GOOGLE_TRANSLATE_API_KEY = os.environ.get("GOOGLE_TRANSLATE_API_KEY", "")
 
+# Google Cloud AutoML Translation Project ID
+GOOGLE_AUTOML_PROJECT_ID = os.environ.get("GOOGLE_AUTOML_PROJECT_ID", "")
+
+# It is recommended to make Google Cloud AutoML Translation warmup requests every minute,
+# although in our experience every 5 minutes (300 seconds) is sufficient.
+GOOGLE_AUTOML_WARMUP_INTERVAL = float(
+    os.environ.get("GOOGLE_AUTOML_WARMUP_INTERVAL", "300")
+)
+
 # Microsoft Translator API Key
 MICROSOFT_TRANSLATOR_API_KEY = os.environ.get("MICROSOFT_TRANSLATOR_API_KEY", "")
 
@@ -112,6 +132,7 @@ EMAIL_HOST_USER = os.environ.get(
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.sendgrid.net")
 EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
 EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True") != "False"
+EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "False") != "False"
 EMAIL_HOST_PASSWORD = os.environ.get(
     "EMAIL_HOST_PASSWORD", os.environ.get("SENDGRID_PASSWORD", "")
 )
@@ -152,7 +173,6 @@ INSTALLED_APPS = (
     "django.contrib.contenttypes",
     "django.contrib.messages",
     "django.contrib.sessions",
-    "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
     # Django sites app is required by django-allauth
     "django.contrib.sites",
@@ -170,7 +190,6 @@ INSTALLED_APPS = (
     "allauth.socialaccount.providers.gitlab",
     "notifications",
     "graphene_django",
-    "webpack_loader",
     "django_ace",
 )
 
@@ -190,7 +209,6 @@ MIDDLEWARE = (
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "csp.middleware.CSPMiddleware",
-    "pontoon.base.middleware.AutomaticLoginUserMiddleware",
 )
 
 CONTEXT_PROCESSORS = (
@@ -207,7 +225,7 @@ TEMPLATES = [
         "BACKEND": "django_jinja.backend.Jinja2",
         "NAME": "jinja2",
         "APP_DIRS": True,
-        "DIRS": [os.path.join(FRONTEND_DIR, "build")],
+        "DIRS": [os.path.join(TRANSLATE_DIR, "public")],
         "OPTIONS": {
             "match_extension": "",
             "match_regex": re.compile(
@@ -240,7 +258,6 @@ TEMPLATES = [
                 "django_jinja.builtins.extensions.StaticFilesExtension",
                 "django_jinja.builtins.extensions.DjangoFiltersExtension",
                 "pipeline.jinja2.PipelineExtension",
-                "webpack_loader.contrib.jinja2ext.WebpackExtension",
             ],
         },
     },
@@ -279,12 +296,24 @@ PIPELINE_CSS = {
         ),
         "output_filename": "css/base.min.css",
     },
+    "translate": {
+        "source_filenames": ("translate.css",),
+        "output_filename": "css/translate.min.css",
+    },
     "admin": {
-        "source_filenames": ("css/table.css", "css/admin.css",),
+        "source_filenames": (
+            "css/table.css",
+            "css/admin.css",
+        ),
         "output_filename": "css/admin.min.css",
     },
     "admin_project": {
-        "source_filenames": ("css/double_list_selector.css", "css/admin_project.css",),
+        "source_filenames": (
+            "css/double_list_selector.css",
+            "css/multiple_team_selector.css",
+            "css/admin_project.css",
+            "tag_admin.css",
+        ),
         "output_filename": "css/admin_project.min.css",
     },
     "project": {
@@ -296,6 +325,7 @@ PIPELINE_CSS = {
             "css/sidebar_menu.css",
             "css/multiple_team_selector.css",
             "css/manual_notifications.css",
+            "css/insights_charts.css",
             "css/insights.css",
         ),
         "output_filename": "css/project.min.css",
@@ -307,11 +337,16 @@ PIPELINE_CSS = {
             "css/heading_info.css",
             "css/info.css",
             "css/download_selector.css",
+            "css/insights_charts.css",
+            "css/insights.css",
         ),
         "output_filename": "css/localization.min.css",
     },
     "projects": {
-        "source_filenames": ("css/heading_info.css", "css/table.css",),
+        "source_filenames": (
+            "css/heading_info.css",
+            "css/table.css",
+        ),
         "output_filename": "css/projects.min.css",
     },
     "team": {
@@ -323,6 +358,7 @@ PIPELINE_CSS = {
             "css/heading_info.css",
             "css/team.css",
             "css/request.css",
+            "css/insights_charts.css",
             "css/insights.css",
             "css/info.css",
         ),
@@ -341,7 +377,11 @@ PIPELINE_CSS = {
         "output_filename": "css/sync_logs.min.css",
     },
     "profile": {
-        "source_filenames": ("css/contributor.css", "css/profile.css",),
+        "source_filenames": (
+            "css/contributor.css",
+            "css/insights_charts.css",
+            "css/profile.css",
+        ),
         "output_filename": "css/profile.min.css",
     },
     "settings": {
@@ -349,24 +389,37 @@ PIPELINE_CSS = {
             "css/multiple_team_selector.css",
             "css/contributor.css",
             "css/team_selector.css",
+            "css/toggle.css",
             "css/settings.css",
         ),
         "output_filename": "css/settings.min.css",
     },
     "notifications": {
-        "source_filenames": ("css/sidebar_menu.css", "css/notifications.css",),
+        "source_filenames": (
+            "css/sidebar_menu.css",
+            "css/notifications.css",
+        ),
         "output_filename": "css/notifications.min.css",
     },
     "machinery": {
-        "source_filenames": ("css/team_selector.css", "css/machinery.css",),
+        "source_filenames": (
+            "css/team_selector.css",
+            "css/machinery.css",
+        ),
         "output_filename": "css/machinery.min.css",
     },
     "contributors": {
-        "source_filenames": ("css/heading_info.css", "css/contributors.css",),
+        "source_filenames": (
+            "css/heading_info.css",
+            "css/contributors.css",
+        ),
         "output_filename": "css/contributors.min.css",
     },
     "in_context": {
-        "source_filenames": ("css/bootstrap.min.css", "css/agency.css",),
+        "source_filenames": (
+            "css/bootstrap.min.css",
+            "css/agency.css",
+        ),
         "output_filename": "css/in_context.min.css",
     },
     "terms": {
@@ -382,7 +435,7 @@ PIPELINE_CSS = {
 PIPELINE_JS = {
     "base": {
         "source_filenames": (
-            "js/lib/jquery-1.11.1.min.js",
+            "js/lib/jquery-3.6.1.js",
             "js/lib/jquery.timeago.js",
             "js/lib/jquery.color-2.1.2.js",
             "js/lib/nprogress.js",
@@ -390,23 +443,31 @@ PIPELINE_JS = {
         ),
         "output_filename": "js/base.min.js",
     },
+    "translate": {
+        "source_filenames": ("translate.js",),
+        "output_filename": "js/translate.min.js",
+    },
     "admin": {
         "source_filenames": ("js/table.js",),
         "output_filename": "js/admin.min.js",
     },
     "admin_project": {
         "source_filenames": (
-            "js/lib/jquery-ui.js",
             "js/double_list_selector.js",
+            "js/multiple_team_selector.js",
             "js/admin_project.js",
+            "tag_admin.js",
         ),
         "output_filename": "js/admin_project.min.js",
     },
     "localization": {
         "source_filenames": (
+            "js/lib/Chart.bundle.js",
             "js/table.js",
             "js/progress-chart.js",
             "js/tabs.js",
+            "js/insights_charts.js",
+            "js/insights.js",
             "js/info.js",
         ),
         "output_filename": "js/localization.min.js",
@@ -421,12 +482,16 @@ PIPELINE_JS = {
             "js/sidebar_menu.js",
             "js/multiple_team_selector.js",
             "js/manual_notifications.js",
+            "js/insights_charts.js",
             "js/insights.js",
         ),
         "output_filename": "js/project.min.js",
     },
     "projects": {
-        "source_filenames": ("js/table.js", "js/progress-chart.js",),
+        "source_filenames": (
+            "js/table.js",
+            "js/progress-chart.js",
+        ),
         "output_filename": "js/projects.min.js",
     },
     "team": {
@@ -439,22 +504,31 @@ PIPELINE_JS = {
             "js/tabs.js",
             "js/request.js",
             "js/permissions.js",
+            "js/insights_charts.js",
             "js/insights.js",
             "js/info.js",
         ),
         "output_filename": "js/team.min.js",
     },
     "teams": {
-        "source_filenames": ("js/table.js", "js/progress-chart.js", "js/request.js",),
+        "source_filenames": (
+            "js/table.js",
+            "js/progress-chart.js",
+            "js/request.js",
+        ),
         "output_filename": "js/teams.min.js",
     },
     "profile": {
-        "source_filenames": ("js/contributor.js",),
+        "source_filenames": (
+            "js/lib/Chart.bundle.js",
+            "js/insights_charts.js",
+            "js/profile.js",
+        ),
         "output_filename": "js/profile.min.js",
     },
     "settings": {
         "source_filenames": (
-            "js/lib/jquery-ui.js",
+            "js/lib/jquery-ui-1.13.2.js",
             "js/multiple_team_selector.js",
             "js/team_selector.js",
             "js/settings.js",
@@ -462,7 +536,10 @@ PIPELINE_JS = {
         "output_filename": "js/settings.min.js",
     },
     "notifications": {
-        "source_filenames": ("js/sidebar_menu.js", "js/notifications.js",),
+        "source_filenames": (
+            "js/sidebar_menu.js",
+            "js/notifications.js",
+        ),
         "output_filename": "js/notifications.min.js",
     },
     "machinery": {
@@ -533,17 +610,15 @@ STATICFILES_FINDERS = (
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
 )
 STATICFILES_DIRS = [
-    path("assets"),
-    os.path.join(FRONTEND_DIR, "build", "static"),
+    os.path.join(TRANSLATE_DIR, "dist"),
+    os.path.join(TRANSLATE_DIR, "public"),
+    os.path.join(TAGADMIN_DIR, "dist"),
 ]
 
 
 # Set ALLOWED_HOSTS based on SITE_URL setting.
 def _allowed_hosts():
-    from urllib.parse import urlparse
-    from django.conf import settings
-
-    host = urlparse(settings.SITE_URL).netloc  # Remove protocol and path
+    host = _get_site_url_netloc()  # Remove protocol and path
     result = [host]
     # In order to be able to use ALLOWED_HOSTS to validate URLs, we need to
     # have a version of the host that contains the port. This only applies
@@ -708,8 +783,8 @@ USE_L10N = False
 # See bug 1567402 for details. A Mozilla-specific variable.
 ENABLE_BUGS_TAB = os.environ.get("ENABLE_BUGS_TAB", "False") != "False"
 
-# Enable Insights tab on the locale and project pages,
-# which presents data that needs to be collected by a scheduled job.
+# Enable Insights tab on dashboards,
+# presenting data that needs to be collected by a scheduled job.
 # See docs/admin/deployment.rst for more information.
 ENABLE_INSIGHTS_TAB = os.environ.get("ENABLE_INSIGHTS_TAB", "False") != "False"
 
@@ -847,7 +922,8 @@ DJANGO_NOTIFICATIONS_CONFIG = {
 # Maximum number of read notifications to display in the notifications menu
 NOTIFICATIONS_MAX_COUNT = 7
 
-# Number of events displayed on the Contributor's timeline per page.
-CONTRIBUTORS_TIMELINE_EVENTS_PER_PAGE = 10
+# Integer representing a day of the week on which the `send_suggestion_notifications`
+# management command will run.
+SUGGESTION_NOTIFICATIONS_DAY = os.environ.get("SUGGESTION_NOTIFICATIONS_DAY", 4)
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"

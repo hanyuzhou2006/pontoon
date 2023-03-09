@@ -8,11 +8,11 @@ flags:
 
   frontend:
     paths:
-      - frontend/
+      - translate/
     carryforward: true
 
   non-frontend-js:
     paths:
-      - tests/**.js
+      - tag-admin/src/**.js
       - pontoon/static/js/
     carryforward: true

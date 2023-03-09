@@ -17,7 +17,7 @@ from notifications.signals import notify
 from pontoon.base.models import Project, Locale
 from pontoon.base.utils import require_AJAX, split_ints
 from pontoon.contributors.views import ContributorsMixin
-from pontoon.insights.utils import get_project_insights
+from pontoon.insights.utils import get_insights
 from pontoon.projects import forms
 from pontoon.tags.utils import TagsTool
 
@@ -46,10 +46,23 @@ def project(request, slug):
     project = get_object_or_404(
         Project.objects.visible_for(request.user).available(), slug=slug
     )
+
+    project_locales = project.project_locale
+    chart = project
+
+    # Only include filtered teams if provided
+    teams = request.GET.get("teams", "").split(",")
+    filtered_locales = Locale.objects.filter(code__in=teams)
+    if filtered_locales.exists():
+        project_locales = project_locales.filter(locale__in=filtered_locales)
+        chart = project_locales.aggregated_stats()
+
     return render(
         request,
         "projects/project.html",
         {
+            "chart": chart,
+            "count": project_locales.count(),
             "project": project,
             "tags": (
                 len(TagsTool(projects=[project], priority=True))
@@ -67,9 +80,15 @@ def ajax_teams(request, slug):
         Project.objects.visible_for(request.user).available(), slug=slug
     )
 
-    locales = (
-        Locale.objects.available().prefetch_project_locale(project).order_by("name")
-    )
+    locales = Locale.objects.available()
+
+    # Only include filtered teams if provided
+    teams = request.GET.get("teams", "").split(",")
+    filtered_locales = Locale.objects.filter(code__in=teams)
+    if filtered_locales.exists():
+        locales = locales.filter(pk__in=filtered_locales)
+
+    locales = locales.prefetch_project_locale(project).order_by("name")
 
     return render(
         request,
@@ -86,7 +105,10 @@ def ajax_tags(request, slug):
     if not project.tags_enabled:
         raise Http404
 
-    tags_tool = TagsTool(projects=[project], priority=True,)
+    tags_tool = TagsTool(
+        projects=[project],
+        priority=True,
+    )
 
     return render(
         request,
@@ -104,7 +126,7 @@ def ajax_insights(request, slug):
     project = get_object_or_404(
         Project.objects.visible_for(request.user).available(), slug=slug
     )
-    insights = get_project_insights(Q(project=project))
+    insights = get_insights(project=project)
 
     return render(request, "projects/includes/insights.html", insights)
 

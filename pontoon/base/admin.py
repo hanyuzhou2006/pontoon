@@ -20,7 +20,7 @@ from pontoon.teams.utils import log_user_groups
 AGGREGATED_STATS_FIELDS = (
     "total_strings",
     "approved_strings",
-    "fuzzy_strings",
+    "pretranslated_strings",
     "strings_with_errors",
     "strings_with_warnings",
     "unreviewed_strings",
@@ -189,6 +189,7 @@ class ProjectLocaleInline(admin.TabularInline):
     fields = (
         "locale",
         "readonly",
+        "pretranslation_enabled",
     )
 
 
@@ -282,7 +283,7 @@ class ProjectAdmin(admin.ModelAdmin):
 
 class ProjectLocaleAdmin(admin.ModelAdmin):
     search_fields = ["project__name", "project__slug", "locale__name", "locale__code"]
-    list_display = ("pk", "project", "locale", "readonly")
+    list_display = ("pk", "project", "locale", "readonly", "pretranslation_enabled")
     ordering = ("-pk",)
 
 
@@ -345,7 +346,8 @@ class UserRoleLogActionAdmin(admin.ModelAdmin):
     def get_user_edit_url(self, user_pk):
         return reverse(
             "admin:{}_{}_change".format(
-                get_user_model()._meta.app_label, get_user_model()._meta.model_name,
+                get_user_model()._meta.app_label,
+                get_user_model()._meta.model_name,
             ),
             args=(user_pk,),
         )

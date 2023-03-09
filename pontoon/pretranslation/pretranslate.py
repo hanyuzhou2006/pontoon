@@ -1,5 +1,7 @@
-from functools import reduce
 import operator
+
+from fluent.syntax import FluentSerializer
+from functools import reduce
 
 from django.db.models import CharField, Value as V
 from django.db.models.functions import Concat
@@ -10,18 +12,29 @@ from pontoon.machinery.utils import (
     get_translation_memory_data,
 )
 
+from pontoon.base.templatetags.helpers import (
+    as_simple_translation,
+    is_single_input_ftl_string,
+    get_reconstructed_message,
+)
 
-def get_translations(entity, locale):
+UNTRANSLATABLE_KEY = "AIzaSyDX3R5Y1kxh_8lJ4OAO"
+
+serializer = FluentSerializer()
+
+
+def get_pretranslations(entity, locale):
     """
-    Get pretranslations for the entity-locale pair
+    Get pretranslations for the entity-locale pair using internal translation memory and
+    Google's machine translation.
 
     :arg Entity entity: the Entity object
     :arg Locale locale: the Locale object
 
-    :returns: a list of tuple with:
+    :returns: a list of tuples, consisting of:
         - a pretranslation of the entity
-        - plural form
-        - user - tm_user/gt_user
+        - a plural form
+        - a user (representing TM or GT)
     """
     tm_user = User.objects.get(email="pontoon-tm@example.com")
     gt_user = User.objects.get(email="pontoon-gt@example.com")
@@ -29,25 +42,57 @@ def get_translations(entity, locale):
     strings = []
     plural_forms = range(0, locale.nplurals or 1)
 
+    tm_input = (
+        as_simple_translation(entity.string)
+        if is_single_input_ftl_string(entity.string)
+        else entity.string
+    )
+
+    # Return empty translation if source text empty
+    if tm_input == "":
+        return [("", None, tm_user)]
+
     # Try to get matches from translation_memory
-    tm_response = get_translation_memory_data(text=entity.string, locale=locale,)
+    tm_response = get_translation_memory_data(
+        text=tm_input,
+        locale=locale,
+    )
 
     tm_response = [t for t in tm_response if int(t["quality"]) == 100]
 
     if tm_response:
         if entity.string_plural == "":
-            strings = [(tm_response[0]["target"], None, tm_user)]
+            translation = tm_response[0]["target"]
+
+            if entity.string != tm_input:
+                translation = serializer.serialize_entry(
+                    get_reconstructed_message(entity.string, translation)
+                )
+
+            strings = [(translation, None, tm_user)]
         else:
             for plural_form in plural_forms:
                 strings.append((tm_response[0]["target"], plural_form, tm_user))
 
     # Else fetch from google translate
     elif locale.google_translate_code:
+        gt_input = (
+            entity.string.replace(entity.key, UNTRANSLATABLE_KEY, 1)
+            if entity.resource.format == "ftl"
+            else entity.string
+        )
+
         gt_response = get_google_translate_data(
-            text=entity.string, locale_code=locale.google_translate_code,
+            text=gt_input,
+            locale=locale,
         )
 
         if gt_response["status"]:
+            if entity.string != gt_input:
+                gt_response["translation"] = gt_response["translation"].replace(
+                    UNTRANSLATABLE_KEY, entity.key
+                )
+
             if entity.string_plural == "":
                 strings = [(gt_response["translation"], None, gt_user)]
             else:
