@@ -35,7 +35,9 @@ def get_translations_info(translations, locale):
     count = translations.count()
     translated_resources = list(translations.translated_resources(locale))
     changed_entities = list(
-        Entity.objects.filter(translation__in=translations).distinct()
+        Entity.objects.filter(translation__in=translations)
+        .distinct()
+        .prefetch_related("resource__project")
     )
 
     return count, translated_resources, changed_entities
@@ -115,6 +117,7 @@ def find_and_replace(translations, find, replace, user):
         new_translation.rejected = False
         new_translation.rejected_date = None
         new_translation.rejected_user = None
+        new_translation.pretranslated = False
         new_translation.fuzzy = False
 
         if new_translation.entity.resource.format in DB_FORMATS:

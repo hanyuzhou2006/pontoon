@@ -32,7 +32,7 @@ def _assert_tags(expected, data):
         "total_strings",
         "approved_strings",
         "unreviewed_strings",
-        "fuzzy_strings",
+        "pretranslated_strings",
     ]
     for slug, stats in results.items():
         _exp = expected[slug]
@@ -54,7 +54,10 @@ def _calculate_resource_tags(**kwargs):
     priority = kwargs.get("priority", None)
     resource_tags = {}
     tags_through = Tag.resources.through.objects.values_list(
-        "resource", "tag", "tag__slug", "tag__name",
+        "resource",
+        "tag",
+        "tag__slug",
+        "tag__name",
     )
     if priority is not None:
         if priority is True:
@@ -102,7 +105,7 @@ def _calculate_tags(**kwargs):
     attrs = [
         "approved_strings",
         "unreviewed_strings",
-        "fuzzy_strings",
+        "pretranslated_strings",
     ]
     totals = {}
     resource_attrs = [

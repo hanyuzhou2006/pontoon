@@ -10,7 +10,7 @@ class Tagged:
     def __init__(self, **kwargs):
         self._latest_translation = kwargs.pop("latest_translation", None)
         self.approved_strings = kwargs.get("approved_strings")
-        self.fuzzy_strings = kwargs.get("fuzzy_strings")
+        self.pretranslated_strings = kwargs.get("pretranslated_strings")
         self.strings_with_warnings = kwargs.get("strings_with_warnings")
         self.strings_with_errors = kwargs.get("strings_with_errors")
         self.total_strings = kwargs.get("total_strings")
@@ -19,8 +19,7 @@ class Tagged:
 
     @property
     def chart(self):
-        """Generate a dict of chart information
-        """
+        """Generate a dict of chart information"""
         return TagChart(**self.kwargs) if self.total_strings else None
 
     @property
@@ -29,8 +28,7 @@ class Tagged:
 
     @property
     def latest_activity(self):
-        """Returns wrapped LatestActivity data if available
-        """
+        """Returns wrapped LatestActivity data if available"""
         return (
             LatestActivity(self.latest_translation) if self.latest_translation else None
         )
@@ -47,8 +45,7 @@ class Tagged:
 
 
 class TaggedLocale(Tagged):
-    """Wraps a Locale to provide stats and latest information
-    """
+    """Wraps a Locale to provide stats and latest information"""
 
     @property
     def code(self):

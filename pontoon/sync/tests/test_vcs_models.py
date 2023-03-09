@@ -26,7 +26,6 @@ from pontoon.sync.tests import (
     VCSTranslationFactory,
 )
 from pontoon.sync.vcs.models import (
-    MissingRepositoryPermalink,
     VCSConfiguration,
     VCSResource,
     VCSProject,
@@ -121,17 +120,6 @@ class VCSProjectTests(VCSTestCase):
         )
 
         assert files == {"path/to/localizable_file.ftl": ["XY"]}
-
-    def test_missing_permalink_prefix(self):
-        """
-        Fail when the source repository of a project with the project
-        config doesn't have the permalink defined.
-        """
-        with self.assertRaises(MissingRepositoryPermalink):
-            self.project.configuration_file = "l10n.toml"
-            self.project.source_repository.permalink_prefix = ""
-            self.project.source_repository.save()
-            VCSProject(self.project,)
 
     def test_relative_resource_paths(self):
         with patch.object(
@@ -278,7 +266,8 @@ class VCSProjectTests(VCSTestCase):
                     PROJECT_CONFIG_CHECKOUT_PATH, "values/strings_child.properties"
                 ),
                 os.path.join(
-                    PROJECT_CONFIG_CHECKOUT_PATH, "values/strings_reality.properties",
+                    PROJECT_CONFIG_CHECKOUT_PATH,
+                    "values/strings_reality.properties",
                 ),
             ]
         )
@@ -321,7 +310,9 @@ class VCSProjectTests(VCSTestCase):
             ("/root/templates", [], ("foo.pot",)),
         )
         with patch(
-            "pontoon.sync.vcs.models.os.walk", wraps=os, return_value=hidden_paths,
+            "pontoon.sync.vcs.models.os.walk",
+            wraps=os,
+            return_value=hidden_paths,
         ):
             assert list(self.vcs_project.resource_paths_without_config()) == [
                 "/root/templates/foo.pot"
@@ -336,7 +327,9 @@ class VCSConfigurationTests(VCSTestCase):
         self.locale, _ = Locale.objects.get_or_create(code="fr")
 
         self.repository = RepositoryFactory()
-        self.db_project = ProjectFactory.create(repositories=[self.repository],)
+        self.db_project = ProjectFactory.create(
+            repositories=[self.repository],
+        )
 
         checkout_path_patch = patch.object(
             Repository,
@@ -348,16 +341,20 @@ class VCSConfigurationTests(VCSTestCase):
         self.addCleanup(checkout_path_patch.stop)
 
         self.resource_amo = ResourceFactory.create(
-            project=self.db_project, path="values/amo.pot",
+            project=self.db_project,
+            path="values/amo.pot",
         )
         self.resource_strings = ResourceFactory.create(
-            project=self.db_project, path="values/strings.properties",
+            project=self.db_project,
+            path="values/strings.properties",
         )
         self.resource_strings_reality = ResourceFactory.create(
-            project=self.db_project, path="values/strings_reality.properties",
+            project=self.db_project,
+            path="values/strings_reality.properties",
         )
         self.resource_strings_child = ResourceFactory.create(
-            project=self.db_project, path="values/strings_child.properties",
+            project=self.db_project,
+            path="values/strings_child.properties",
         )
 
         # Make sure VCSConfiguration instance is initialized
@@ -380,7 +377,9 @@ class VCSConfigurationTests(VCSTestCase):
         locale_code = None
 
         assert (
-            self.vcs_project.configuration.get_or_set_project_files(locale_code,).locale
+            self.vcs_project.configuration.get_or_set_project_files(
+                locale_code,
+            ).locale
             == locale_code
         )
 
@@ -391,7 +390,9 @@ class VCSConfigurationTests(VCSTestCase):
         locale_code = self.locale.code
 
         assert (
-            self.vcs_project.configuration.get_or_set_project_files(locale_code,).locale
+            self.vcs_project.configuration.get_or_set_project_files(
+                locale_code,
+            ).locale
             == locale_code
         )
 
@@ -402,7 +403,9 @@ class VCSConfigurationTests(VCSTestCase):
         locale_code = "new-locale-code"
 
         assert (
-            self.vcs_project.configuration.get_or_set_project_files(locale_code,).locale
+            self.vcs_project.configuration.get_or_set_project_files(
+                locale_code,
+            ).locale
             == locale_code
         )
 
@@ -410,28 +413,38 @@ class VCSConfigurationTests(VCSTestCase):
 
     def test_l10n_path(self):
         absolute_resource_path = os.path.join(
-            PROJECT_CONFIG_CHECKOUT_PATH, "values/amo.pot",
+            PROJECT_CONFIG_CHECKOUT_PATH,
+            "values/amo.pot",
         )
 
-        l10n_path = os.path.join(PROJECT_CONFIG_CHECKOUT_PATH, "values-fr/amo.po",)
+        l10n_path = os.path.join(
+            PROJECT_CONFIG_CHECKOUT_PATH,
+            "values-fr/amo.po",
+        )
 
         assert (
             self.vcs_project.configuration.l10n_path(
-                self.locale, absolute_resource_path,
+                self.locale,
+                absolute_resource_path,
             )
             == l10n_path
         )
 
     def test_reference_path(self):
         absolute_l10n_path = os.path.join(
-            PROJECT_CONFIG_CHECKOUT_PATH, "values-fr/amo.po",
+            PROJECT_CONFIG_CHECKOUT_PATH,
+            "values-fr/amo.po",
         )
 
-        reference_path = os.path.join(PROJECT_CONFIG_CHECKOUT_PATH, "values/amo.pot",)
+        reference_path = os.path.join(
+            PROJECT_CONFIG_CHECKOUT_PATH,
+            "values/amo.pot",
+        )
 
         assert (
             self.vcs_project.configuration.reference_path(
-                self.locale, absolute_l10n_path,
+                self.locale,
+                absolute_l10n_path,
             )
             == reference_path
         )
@@ -468,7 +481,9 @@ class GrandFatheredVCSConfigurationTest(VCSConfigurationTests):
 
 def setUpResource(self):
     self.repository = RepositoryFactory()
-    self.db_project = ProjectFactory.create(repositories=[self.repository],)
+    self.db_project = ProjectFactory.create(
+        repositories=[self.repository],
+    )
 
     checkout_path_patch = patch.object(
         Repository,

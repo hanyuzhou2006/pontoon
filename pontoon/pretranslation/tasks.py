@@ -10,8 +10,9 @@ from pontoon.base.models import (
     Translation,
     ChangedEntityLocale,
 )
+from pontoon.actionlog.models import ActionLog
 from pontoon.pretranslation.pretranslate import (
-    get_translations,
+    get_pretranslations,
     update_changed_instances,
 )
 from pontoon.base.tasks import PontoonTask
@@ -37,28 +38,42 @@ def pretranslate(self, project_pk, locales=None, entities=None):
     """
     project = Project.objects.get(pk=project_pk)
 
-    log.info(f"Fetching pretranslations for project {project.name} started")
+    if not project.pretranslation_enabled:
+        log.info(f"Pretranslation not enabled for project {project.name}")
+        return
 
     if locales:
         locales = project.locales.filter(pk__in=locales)
     else:
         locales = project.locales
 
-    locales = (
-        locales.filter(project_locale__readonly=False)
-        .distinct()
-        .prefetch_project_locale(project)
+    locales = locales.filter(
+        project_locale__project=project,
+        project_locale__pretranslation_enabled=True,
+        project_locale__readonly=False,
     )
+
+    if not locales:
+        log.info(
+            f"Pretranslation not enabled for any locale within project {project.name}"
+        )
+        return
+
+    log.info(f"Fetching pretranslations for project {project.name} started")
 
     if not entities:
         entities = Entity.objects.filter(
-            resource__project=project, obsolete=False,
-        ).prefetch_related("resource")
+            resource__project=project,
+            obsolete=False,
+        )
+
+    entities = entities.prefetch_related("resource__project")
 
     # get available TranslatedResource pairs
     tr_pairs = (
         TranslatedResource.objects.filter(
-            resource__project=project, locale__in=locales,
+            resource__project=project,
+            locale__in=locales,
         )
         .annotate(
             locale_resource=Concat(
@@ -71,7 +86,10 @@ def pretranslate(self, project_pk, locales=None, entities=None):
 
     # Fetch all distinct locale-entity pairs for which translation exists
     translated_entities = (
-        Translation.objects.filter(locale__in=locales, entity__in=entities,)
+        Translation.objects.filter(
+            locale__in=locales,
+            entity__in=entities,
+        )
         .annotate(
             locale_entity=Concat(
                 "locale_id", V("-"), "entity_id", output_field=CharField()
@@ -99,19 +117,19 @@ def pretranslate(self, project_pk, locales=None, entities=None):
             if locale_entity in translated_entities or locale_resource not in tr_pairs:
                 continue
 
-            strings = get_translations(entity, locale)
+            pretranslations = get_pretranslations(entity, locale)
 
-            if not strings:
+            if not pretranslations:
                 continue
 
-            for string, plural_form, user in strings:
+            for string, plural_form, user in pretranslations:
                 t = Translation(
                     entity=entity,
                     locale=locale,
                     string=string,
                     user=user,
                     approved=False,
-                    fuzzy=True,
+                    pretranslated=True,
                     active=True,
                     plural_form=plural_form,
                 )
@@ -137,6 +155,18 @@ def pretranslate(self, project_pk, locales=None, entities=None):
 
     translations = Translation.objects.bulk_create(translations)
 
+    # Log creating actions
+    actions_to_log = [
+        ActionLog(
+            action_type=ActionLog.ActionType.TRANSLATION_CREATED,
+            performed_by=t.user,
+            translation=t,
+        )
+        for t in translations
+    ]
+
+    ActionLog.objects.bulk_create(actions_to_log)
+
     # Run checks on all translations
     translation_pks = {translation.pk for translation in translations}
     bulk_run_checks(Translation.objects.for_checks().filter(pk__in=translation_pks))
@@ -145,6 +175,9 @@ def pretranslate(self, project_pk, locales=None, entities=None):
     changed_entities = {}
     existing = ChangedEntityLocale.objects.values_list("entity", "locale").distinct()
     for t in translations:
+        if t.entity.resource.project.data_source == Project.DataSource.DATABASE:
+            continue
+
         key = (t.entity.pk, t.locale.pk)
         # Remove duplicate changes to prevent unique constraint violation
         if key not in existing:

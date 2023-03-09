@@ -55,7 +55,7 @@ class SyncLog(BaseLog):
     def fix_stats(self):
         """
         Recalculate any broken stats when sync task is finished. This is a
-        temporary fix for bug 1310668.
+        temporary fix for https://github.com/mozilla/pontoon/issues/2040.
         """
         if not self.finished:
             return
@@ -90,7 +90,7 @@ class SyncLog(BaseLog):
                 for pl in ProjectLocale.objects.filter(project=p):
                     pl.aggregate_stats()
 
-        # approved + fuzzy + errors + warnings > total in TranslatedResource
+        # approved + pretranslated + errors + warnings > total in TranslatedResource
         for t in (
             TranslatedResource.objects.filter(
                 resource__project__disabled=False,
@@ -99,7 +99,7 @@ class SyncLog(BaseLog):
             .annotate(
                 total=Sum(
                     F("approved_strings")
-                    + F("fuzzy_strings")
+                    + F("pretranslated_strings")
                     + F("strings_with_errors")
                     + F("strings_with_warnings")
                 )

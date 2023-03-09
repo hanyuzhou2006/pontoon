@@ -1,27 +1,25 @@
 # docker-compose for Pontoon development.
 #
 # Note: Requires docker-compose 1.10+.
-version: "2"
+version: '2.3'
 services:
-  # Webapp
-  webapp:
+  server:
     build:
       context: .
       dockerfile: ./docker/Dockerfile
+      target: server
     image: local/pontoon
     env_file:
-      - docker/config/webapp.env
+      - docker/config/server.env
     depends_on:
       - postgresql
     ports:
-      - "8000:8000"
-      - "3000:3000"
+      - '8000:8000'
     volumes:
       - ./pontoon:/app/pontoon
-      - ./frontend/src:/app/frontend/src
-      - ./frontend/public:/app/frontend/public
-      - ./tests:/app/tests
       - ./requirements:/app/requirements
+      - ./tag-admin:/app/tag-admin
+      - ./translate:/app/translate
       - ~/.ssh:/home/pontoon/.ssh
 
   # Database

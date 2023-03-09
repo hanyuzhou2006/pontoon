@@ -84,13 +84,6 @@ class DownloadTOMLParser(TOMLParser):
         )
 
 
-class MissingRepositoryPermalink(Exception):
-    """
-    Raised when a project uses project config files and
-    its source repository doesn't have the permalink.
-    """
-
-
 class MissingSourceRepository(Exception):
     """
     Raised when project can't find the repository
@@ -168,10 +161,6 @@ class VCSProject:
 
         self.configuration = None
         if db_project.configuration_file:
-            # Permalink is required to download project config files.
-            if not db_project.source_repository.permalink_prefix:
-                raise MissingRepositoryPermalink()
-
             self.configuration = VCSConfiguration(self)
 
     @cached_property
@@ -376,7 +365,9 @@ class VCSProject:
                     locale_directory_paths[locale.code] = self.configuration.l10n_base
                 else:
                     locale_directory_paths[locale.code] = locale_directory_path(
-                        self.checkout_path, locale.code, parent_directories,
+                        self.checkout_path,
+                        locale.code,
+                        parent_directories,
                     )
                 parent_directory = get_parent_directory(
                     locale_directory_paths[locale.code]
@@ -632,11 +623,23 @@ class VCSConfiguration:
     @cached_property
     def parsed_configuration(self):
         """Return parsed project configuration file."""
-        return DownloadTOMLParser(
-            self.vcs_project.db_project.source_repository.checkout_path,
-            self.vcs_project.db_project.source_repository.permalink_prefix,
-            self.configuration_file,
-        ).parse(env={"l10n_base": self.l10n_base})
+        if self.vcs_project.db_project.source_repository.permalink_prefix:
+            """If we have a permalink we download the configuration file"""
+            return DownloadTOMLParser(
+                self.vcs_project.db_project.source_repository.checkout_path,
+                self.vcs_project.db_project.source_repository.permalink_prefix,
+                self.configuration_file,
+            ).parse(env={"l10n_base": self.l10n_base})
+        else:
+            """If we don't have a permalink we use the configuration file from the checkout path"""
+            return TOMLParser().parse(
+                os.path.join(
+                    self.vcs_project.db_project.source_repository.checkout_path,
+                    self.configuration_file,
+                ),
+                env={"l10n_base": self.l10n_base},
+                ignore_missing_includes=True,
+            )
 
     def add_locale(self, locale_code):
         """
@@ -689,7 +692,8 @@ class VCSConfiguration:
             self.add_locale(locale_code)
 
         return self.project_files.setdefault(
-            locale_code, ProjectFiles(locale_code, [self.parsed_configuration]),
+            locale_code,
+            ProjectFiles(locale_code, [self.parsed_configuration]),
         )
 
     def l10n_path(self, locale, reference_path):
@@ -720,7 +724,8 @@ class VCSConfiguration:
 
         for resource in self.vcs_project.db_project.resources.all():
             absolute_resource_path = os.path.join(
-                self.vcs_project.source_directory_path, resource.path,
+                self.vcs_project.source_directory_path,
+                resource.path,
             )
 
             if project_files.match(absolute_resource_path):
@@ -785,7 +790,8 @@ class VCSResource:
             if self.vcs_project.configuration:
                 # Some resources might not be available for this locale
                 resource_path = self.vcs_project.configuration.l10n_path(
-                    locale, source_resource_path,
+                    locale,
+                    source_resource_path,
                 )
                 if resource_path is None:
                     continue

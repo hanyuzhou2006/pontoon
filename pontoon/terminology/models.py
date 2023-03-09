@@ -22,7 +22,7 @@ def update_terminology_project_stats():
         [
             "total_strings",
             "approved_strings",
-            "fuzzy_strings",
+            "pretranslated_strings",
             "strings_with_errors",
             "strings_with_warnings",
             "unreviewed_strings",
@@ -52,6 +52,16 @@ class TermQuerySet(models.QuerySet):
 
         return terms
 
+    def delete(self, *args, **kwargs):
+        """
+        Before deleting Terms, obsolete their Entities
+        """
+        for term in self:
+            term.obsolete_entity()
+        update_terminology_project_stats()
+
+        super().delete(*args, **kwargs)
+
 
 class Term(models.Model):
     text = models.CharField(max_length=255)
@@ -80,7 +90,6 @@ class Term(models.Model):
     )
 
     case_sensitive = models.BooleanField(default=False)
-    exact_match = models.BooleanField(default=False)
     do_not_translate = models.BooleanField(default=False)
     forbidden = models.BooleanField(default=False)
 
@@ -124,7 +133,8 @@ class Term(models.Model):
         Generate entity comment from the term.
         """
         comment = "{}. {}.".format(
-            self.part_of_speech.capitalize(), self.definition.capitalize().rstrip("."),
+            self.part_of_speech.capitalize(),
+            self.definition.capitalize().rstrip("."),
         )
 
         if self.usage:
@@ -143,7 +153,9 @@ class Term(models.Model):
         resource = Resource.objects.get(project__slug="terminology")
 
         entity, created = Entity.objects.get_or_create(
-            string=self.text, comment=self.entity_comment(), resource=resource,
+            string=self.text,
+            comment=self.entity_comment(),
+            resource=resource,
         )
 
         # Using update() to avoid circular Term.save() call

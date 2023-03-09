@@ -115,7 +115,10 @@ def test_util_latest_activity_user(avatar_mock):
     avatar_mock.return_value = 113
 
     # call with random user data - defaults
-    user = LatestActivityUser(dict(foo="bar"), "submitted",)
+    user = LatestActivityUser(
+        dict(foo="bar"),
+        "submitted",
+    )
     assert user.prefix == ""
     assert user.email is None
     assert user.first_name is None
@@ -123,7 +126,10 @@ def test_util_latest_activity_user(avatar_mock):
     assert user.gravatar_url(23) is None
 
     # call with email - user data added
-    user = LatestActivityUser(dict(user__email="bar@ba.z"), "submitted",)
+    user = LatestActivityUser(
+        dict(user__email="bar@ba.z"),
+        "submitted",
+    )
     assert user.prefix == ""
     assert user.email == "bar@ba.z"
     assert user.first_name is None
@@ -135,7 +141,8 @@ def test_util_latest_activity_user(avatar_mock):
 
     # call with email and first_name - correct first_name
     user = LatestActivityUser(
-        dict(user__email="bar@ba.z", user__first_name="FOOBAR"), "submitted",
+        dict(user__email="bar@ba.z", user__first_name="FOOBAR"),
+        "submitted",
     )
     assert user.prefix == ""
     assert user.email == "bar@ba.z"
@@ -166,7 +173,7 @@ def test_util_tag_chart():
 
     chart = TagChart()
     assert chart.approved_strings is None
-    assert chart.fuzzy_strings is None
+    assert chart.pretranslated_strings is None
     assert chart.total_strings is None
     assert chart.unreviewed_strings is None
 
@@ -180,12 +187,12 @@ def test_util_tag_chart():
 
     chart = TagChart(
         total_strings=73,
-        fuzzy_strings=7,
+        pretranslated_strings=7,
         approved_strings=13,
         strings_with_warnings=0,
         unreviewed_strings=23,
     )
     assert chart.approved_share == 18.0
-    assert chart.fuzzy_share == 10.0
+    assert chart.pretranslated_share == 10.0
     assert chart.unreviewed_share == 32.0
-    assert chart.completion_percent == 17
+    assert chart.completion_percent == 27

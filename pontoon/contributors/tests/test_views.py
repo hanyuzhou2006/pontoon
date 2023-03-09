@@ -1,11 +1,9 @@
+import pytest
+
 from collections import OrderedDict
-from datetime import (
-    datetime,
-    timedelta,
-)
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
-import pytest
 from django.http import HttpResponse
 from django.urls import reverse
 from django.utils.timezone import now, make_aware
@@ -14,7 +12,6 @@ from pontoon.base.models import User
 from pontoon.base.tests import (
     LocaleFactory,
     TranslationFactory,
-    UserFactory,
 )
 from pontoon.base.utils import aware_datetime
 from pontoon.contributors import views
@@ -41,17 +38,10 @@ def test_profileform_invalid_first_name(member, settings_url):
 
 
 @pytest.mark.django_db
-def test_profileform_invalid_email(member, settings_url):
-    response = member.client.post(settings_url, {"email": "usermail"})
-
-    assert b"Enter a valid email address." in response.content
-
-
-@pytest.mark.django_db
 def test_profileform_missing_profile_fields(member, settings_url):
     response = member.client.post(settings_url, {})
 
-    assert response.content.count(b"This field is required.") == 2
+    assert response.content.count(b"This field is required.") == 1
 
 
 @pytest.mark.django_db
@@ -74,7 +64,11 @@ def test_profileform_user_locales_order(member, settings_url):
         {
             "first_name": "contributor",
             "email": member.user.email,
-            "locales_order": commajoin(locale2.pk, locale1.pk, locale3.pk,),
+            "locales_order": commajoin(
+                locale2.pk,
+                locale1.pk,
+                locale3.pk,
+            ),
         },
     )
 
@@ -98,7 +92,11 @@ def test_profileform_user_locales_order(member, settings_url):
         {
             "first_name": "contributor",
             "email": member.user.email,
-            "locales_order": commajoin(locale1.pk, locale2.pk, locale2.pk,),
+            "locales_order": commajoin(
+                locale1.pk,
+                locale2.pk,
+                locale2.pk,
+            ),
         },
     )
     assert response.status_code, 200
@@ -106,6 +104,26 @@ def test_profileform_user_locales_order(member, settings_url):
         locale1,
         locale2,
     ]
+
+
+@pytest.mark.django_db
+def test_profileform_contact_email_verified(member):
+    """When contact_email changes, contact_email_verified gets set to False."""
+    profile = User.objects.get(pk=member.user.pk).profile
+    profile.contact_email_verified = True
+    profile.save()
+    assert User.objects.get(pk=member.user.pk).profile.contact_email_verified is True
+
+    response = member.client.post(
+        "/settings/",
+        {
+            "first_name": "contributor",
+            "email": member.user.email,
+            "contact_email": "contact@example.com",
+        },
+    )
+    assert response.status_code == 200
+    assert User.objects.get(pk=member.user.pk).profile.contact_email_verified is False
 
 
 @pytest.fixture
@@ -120,14 +138,6 @@ def mock_profile_render():
 def test_profile_view_contributor_profile_by_username(member, mock_profile_render):
     """Users should be able to retrieve contributor's profile by its username."""
     member.client.get(f"/contributors/{member.user.username}/")
-
-    assert mock_profile_render.call_args[0][2]["contributor"] == member.user
-
-
-@pytest.mark.django_db
-def test_profile_view_contributor_profile_by_email(member, mock_profile_render):
-    """Check if we can access contributor profile by its email."""
-    member.client.get(f"/contributors/{member.user.email}/")
 
     assert mock_profile_render.call_args[0][2]["contributor"] == member.user
 
@@ -174,54 +184,28 @@ def contributor_translations(settings, user_a, project_a):
 
 
 @pytest.mark.django_db
-def test_timeline(
-    contributor_translations, client, project_a, mock_profile_render, user_a
+def test_toggle_user_profile_attribute(
+    member, contributor_translations, mock_profile_render, user_a
 ):
-    """Backend should return events filtered by page number requested by user."""
-    client.get(f"/contributors/{user_a.username}/timeline/?page=2")
-    assert mock_profile_render.call_args[0][2]["events"] == [
-        {
-            "date": dt,
-            "type": "translation",
-            "count": count,
-            "project": project_a,
-            "translation": translations[0][0],
-        }
-        for (dt, count), translations in list(contributor_translations.items())[2:4]
-    ]
+    """Test if toggle_user_profile_attribute view works and fails as expected."""
+    params = {}
+    response = member.client.post(f"/api/v1/user/{user_a.username}/", params)
+    assert response.status_code == 403
+    assert response.json()["message"] == "Forbidden: Attribute not allowed"
 
-
-@pytest.mark.django_db
-def test_timeline_invalid_page(contributor_translations, client, user_a):
-    """Backend should return 404 error when user requests an invalid/empty page."""
-    response = client.get(f"/contributors/{user_a.username}/timeline/?page=45")
-    assert response.status_code == 404
-
-    response = client.get(f"/contributors/{user_a.username}/timeline/?page=-aa45")
-    assert response.status_code == 404
-
-
-@pytest.mark.django_db
-def test_timeline_non_active_contributor(
-    contributor_translations, client, mock_profile_render
-):
-    """Test if backend is able return events for a user without contributions."""
-    nonactive_contributor = UserFactory.create()
-    client.get(f"/contributors/{nonactive_contributor.username}/timeline/")
-    assert mock_profile_render.call_args[0][2]["events"] == [
-        {"date": nonactive_contributor.date_joined, "type": "join"}
-    ]
-
-
-@pytest.mark.django_db
-def test_timeline_join(client, contributor_translations, mock_profile_render, user_a):
-    """Last page of results should include informations about the when user joined pontoon."""
-    client.get(f"/contributors/{user_a.username}/timeline/?page=3")
-
-    assert mock_profile_render.call_args[0][2]["events"][-1] == {
-        "date": user_a.date_joined,
-        "type": "join",
+    params = {
+        "attribute": "quality_checks",
     }
+    response = member.client.post(f"/api/v1/user/{user_a.username}/", params)
+    assert response.status_code == 400
+    assert response.json()["message"] == "Bad Request: Value not set"
+
+    params = {
+        "attribute": "quality_checks",
+        "value": "false",
+    }
+    response = member.client.post(f"/api/v1/user/{user_a.username}/", params)
+    assert response.status_code == 200
 
 
 @pytest.fixture
@@ -234,7 +218,7 @@ def mock_contributors_render():
 
 @pytest.fixture
 def mock_users_translations_counts():
-    with patch("pontoon.contributors.views.users_with_translations_counts") as mock:
+    with patch("pontoon.contributors.utils.users_with_translations_counts") as mock:
         yield mock
 
 
@@ -274,7 +258,9 @@ def test_given_period(member, mock_contributors_render, mock_users_translations_
     Checks if view sets and returns data for right period.
     """
     with patch(
-        "django.utils.timezone.now", wraps=now, return_value=aware_datetime(2015, 7, 5),
+        "django.utils.timezone.now",
+        wraps=now,
+        return_value=aware_datetime(2015, 7, 5),
     ):
         member.client.get("/contributors/?period=6")
         assert mock_contributors_render.call_args[0][0]["period"] == 6

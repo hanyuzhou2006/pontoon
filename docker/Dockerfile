@@ -1,4 +1,4 @@
-FROM python:3.9-buster
+FROM python:3.9-bullseye AS server
 
 ARG USER_ID=1000
 ARG GROUP_ID=1000
@@ -11,31 +11,20 @@ ENV PYTHONUNBUFFERED 1
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONPATH /app
 
-# JavaScript applications paths
-ENV WEBPACK_BINARY /app/node_modules/.bin/webpack
-ENV YUGLIFY_BINARY /app/node_modules/.bin/yuglify
-ENV TERSER_BINARY /app/node_modules/.bin/terser
-
 # Install required software.
 RUN apt-get update \
     # Enable downloading packages over https
     && apt-get install -y apt-transport-https \
     # Get source for node.js
-    && curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - \
-    && echo 'deb https://deb.nodesource.com/node_10.x buster main' > /etc/apt/sources.list.d/nodesource.list \
-    && echo 'deb-src https://deb.nodesource.com/node_10.x buster main' >> /etc/apt/sources.list.d/nodesource.list \
-    # Get source for yarn
-    && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
-    && echo 'deb https://dl.yarnpkg.com/debian/ stable main' > /etc/apt/sources.list.d/yarn.list \
+    && curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
     # Install software
     && apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
         libmemcached-dev \
         nodejs \
-        postgresql-client-11 \
-        postgresql-server-dev-11 \
-        yarn \
+        postgresql-client \
+        postgresql-server-dev-13 \
     # Clean up what can be cleaned up.
     && apt-get autoremove -y
 
@@ -51,34 +40,15 @@ RUN groupadd -r --gid=${GROUP_ID} pontoon && useradd --uid=${USER_ID} --no-log-i
 RUN chown -R pontoon:pontoon /app
 USER pontoon
 
-# Install node requirements
-COPY package.json .
-COPY package-lock.json .
+# Install the server's Node.js requirements
+ENV YUGLIFY_BINARY /app/node_modules/.bin/yuglify
+ENV TERSER_BINARY /app/node_modules/.bin/terser
+COPY --chown=pontoon:pontoon pontoon/package.json .
 RUN npm install
 
-RUN mkdir frontend
-WORKDIR frontend
-COPY frontend/package.json .
-COPY --chown=pontoon:pontoon frontend/yarn.lock .
-RUN yarn install
-
-WORKDIR /app
-COPY ./docker/config/webapp.env .env
+COPY --chown=pontoon:pontoon ./docker/config/server.env .env
 COPY --chown=pontoon:pontoon . /app/
 
-# Create the folder for front-end assets
-RUN mkdir -p assets
-# Run webpack to compile JS files
-RUN $WEBPACK_BINARY
+RUN python manage.py collectstatic
 
-# Build Translate.Next frontend resources
-WORKDIR frontend
-RUN yarn build
-
-WORKDIR /app
-
-# Run collectstatic in container which puts files in the default place for
-# static files.
-RUN python manage.py collectstatic --noinput
-
-CMD ["/app/docker/run_webapp.sh"]
+CMD ["/app/docker/server_run.sh"]

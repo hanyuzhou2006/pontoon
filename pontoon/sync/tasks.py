@@ -6,8 +6,9 @@ from django.utils import timezone
 
 from pontoon.base.models import (
     ChangedEntityLocale,
-    Project,
+    Entity,
     Locale,
+    Project,
 )
 
 from pontoon.base.tasks import PontoonTask
@@ -61,7 +62,12 @@ def update_locale_project_locale_stats(locale, project):
     on_error=sync_project_error,
 )
 def sync_project(
-    self, project_pk, sync_log_pk, no_pull=False, no_commit=False, force=False,
+    self,
+    project_pk,
+    sync_log_pk,
+    no_pull=False,
+    no_commit=False,
+    force=False,
 ):
     """Fetch the project with the given PK and perform sync on it."""
     db_project = get_or_fail(
@@ -182,7 +188,7 @@ def sync_translations(
         project_sync_log=project_sync_log, repository=repo, start_time=timezone.now()
     )
 
-    locales = db_project.locales.all()
+    locales = db_project.locales.order_by("code")
 
     if not locales:
         log.info(
@@ -204,7 +210,7 @@ def sync_translations(
     ).distinct()
 
     # We should also sync files for which source file change - but only for read-only locales.
-    # See bug 1372151 for more details.
+    # See https://github.com/mozilla/pontoon/issues/2068 for more details.
     if added_and_changed_resources:
         changed_locales_pks = [l.pk for l in locales]
         readonly_locales_pks = [l.pk for l in readonly_locales]
@@ -305,7 +311,8 @@ def sync_translations(
 
                 log.info(
                     "Synced locale {locale} for project {project}.".format(
-                        locale=locale.code, project=db_project.slug,
+                        locale=locale.code,
+                        project=db_project.slug,
                     )
                 )
 
@@ -316,7 +323,9 @@ def sync_translations(
             log.warning(
                 "Failed to sync locale {locale} for project {project} due to "
                 "commit error: {error}".format(
-                    locale=locale.code, project=db_project.slug, error=err,
+                    locale=locale.code,
+                    project=db_project.slug,
+                    error=err,
                 )
             )
 
@@ -338,7 +347,9 @@ def sync_translations(
             # We don't have files: we can still update asymmetric translated resources.
             else:
                 update_translated_resources_no_files(
-                    db_project, locale, added_and_changed_resources,
+                    db_project,
+                    locale,
+                    added_and_changed_resources,
                 )
 
             update_locale_project_locale_stats(locale, db_project)
@@ -346,11 +357,14 @@ def sync_translations(
 
             log.info(
                 "Synced source changes for locale {locale} for project {project}.".format(
-                    locale=locale.code, project=db_project.slug,
+                    locale=locale.code,
+                    project=db_project.slug,
                 )
             )
 
         db_project.aggregate_stats()
+
+    synced_locales = sorted(synced_locales)
 
     if synced_locales:
         log.info(
@@ -390,5 +404,5 @@ def sync_translations(
 
         # Pretranslate newly added entities for all locales
         if new_entities and locales:
-            new_entities = list(set(new_entities))
-            pretranslate(db_project.pk, locales=locales, entities=new_entities)
+            entities = Entity.objects.filter(pk__in=[e.pk for e in set(new_entities)])
+            pretranslate(db_project.pk, locales=locales, entities=entities)

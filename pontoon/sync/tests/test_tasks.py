@@ -195,11 +195,19 @@ class SyncTranslationsTests(FakeCheckoutTestCase):
 
         self.mock_pull_locale_repo_changes.return_value = [
             True,
-            {self.repository.pk: Locale.objects.filter(pk=self.translated_locale.pk,)},
+            {
+                self.repository.pk: Locale.objects.filter(
+                    pk=self.translated_locale.pk,
+                )
+            },
         ]
 
         sync_translations(
-            self.db_project, self.project_sync_log, self.now, True, no_commit=False,
+            self.db_project,
+            self.project_sync_log,
+            self.now,
+            True,
+            no_commit=False,
         )
 
         assert not self.mock_commit_changes.called
@@ -276,7 +284,7 @@ class SyncTranslationsTests(FakeCheckoutTestCase):
             [],
             [],
             [],
-            ["new_entity"],
+            [self.main_db_entity],
         )
 
         # Pretranslation is not enabled
@@ -316,11 +324,14 @@ class SyncTranslationsTests(FakeCheckoutTestCase):
                 [],
                 [],
                 [],
-                ["new_entity"],
+                [self.main_db_entity],
             )
 
         assert self.mock_pretranslate.called
-        assert self.mock_pretranslate.call_args[1]["entities"] == ["new_entity"]
+        assert (
+            self.mock_pretranslate.call_args[1]["entities"][0].pk
+            == self.main_db_entity.pk
+        )
         assert list(self.mock_pretranslate.call_args[1]["locales"]) == all_locales
 
     def test_new_translated_resource_pretranslation(self):
@@ -342,7 +353,7 @@ class SyncTranslationsTests(FakeCheckoutTestCase):
             [],
             [],
             [],
-            ["new_entity"],
+            [self.main_db_entity],
         )
 
         assert self.mock_pretranslate.called

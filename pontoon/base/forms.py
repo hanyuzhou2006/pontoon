@@ -12,7 +12,7 @@ from pontoon.base.models import (
     User,
     UserProfile,
 )
-from pontoon.sync.formats import are_compatible_formats
+from pontoon.sync.formats import are_compatible_files
 from pontoon.teams.utils import log_group_members
 
 
@@ -65,13 +65,13 @@ class UploadFileForm(DownloadFileForm):
 
             # File format validation
             if part:
-                uploadfile_ext = Path(uploadfile.name).suffix.lower()
-                targetfile_ext = Path(part).suffix.lower()
+                uploadfile_name = Path(uploadfile.name).name.lower()
+                targetfile_name = Path(part).name.lower()
 
                 # Fail if upload and target file are incompatible
-                if not are_compatible_formats(uploadfile_ext, targetfile_ext):
+                if not are_compatible_files(uploadfile_name, targetfile_name):
                     message = "Upload failed. File format not supported. Use {supported}.".format(
-                        supported=targetfile_ext
+                        supported=targetfile_name
                     )
                     raise forms.ValidationError(message)
 
@@ -184,38 +184,59 @@ class ProjectLocaleFormSet(forms.models.BaseModelFormSet):
 
 
 ProjectLocalePermsFormsSet = forms.modelformset_factory(
-    ProjectLocale, ProjectLocalePermsForm, formset=ProjectLocaleFormSet,
+    ProjectLocale,
+    ProjectLocalePermsForm,
+    formset=ProjectLocaleFormSet,
 )
 
 
-class UserProfileForm(forms.ModelForm):
+class UserForm(forms.ModelForm):
     """
-    Form is responsible for saving user's name.
+    Form is responsible for saving user data.
     """
 
     first_name = forms.RegexField(
-        label="Name", regex="^[^<>\"'&]+$", max_length=30, strip=True,
-    )
-    email = forms.EmailField(
-        help_text=(
-            "Changing your email address will cause a logout. "
-            "Make sure the new one is correct before saving!"
-        )
+        label="Display Name",
+        regex="^[^<>\"'&]+$",
+        max_length=30,
+        strip=True,
     )
 
     class Meta:
         model = User
-        fields = ("first_name", "email")
+        fields = ("first_name",)
 
-    def clean_email(self):
-        email = self.cleaned_data.get("email")
-        if email and (
-            User.objects.filter(email=email)
-            .exclude(username=self.instance.username)
-            .exists()
-        ):
-            raise forms.ValidationError("Email address must be unique.")
-        return email
+
+class UserProfileForm(forms.ModelForm):
+    """
+    Form is responsible for saving user profile data.
+    """
+
+    class Meta:
+        model = UserProfile
+        fields = (
+            "username",
+            "contact_email",
+            "bio",
+            "chat",
+            "github",
+            "bugzilla",
+        )
+
+
+class UserProfileVisibilityForm(forms.ModelForm):
+    """
+    Form is responsible for controlling user profile visibility.
+    """
+
+    class Meta:
+        model = UserProfile
+        fields = (
+            "visibility_email",
+            "visibility_external_accounts",
+            "visibility_self_approval",
+            "visibility_approval",
+        )
 
 
 class UserCustomHomepageForm(forms.ModelForm):
@@ -278,6 +299,9 @@ class GetEntitiesForm(forms.Form):
     tag = forms.CharField(required=False)
     time = forms.CharField(required=False)
     author = forms.CharField(required=False)
+    review_time = forms.CharField(required=False)
+    reviewer = forms.CharField(required=False)
+    exclude_self_reviewed = forms.BooleanField(required=False)
     search = forms.CharField(required=False)
     exclude_entities = forms.CharField(required=False)
     entity_ids = forms.CharField(required=False)

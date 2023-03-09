@@ -16,7 +16,7 @@ This guide assumes you have already installed and set up the following:
 
 1. Git_
 2. `Python 2.7`_, pip_, and virtualenv_
-3. `Node.js`_ and npm_
+3. `Node.js 14`_ and npm_ v7 or later
 4. `Postgres 9.4 or 9.5`_
 
 These docs assume a Unix-like operating system, although the site should, in
@@ -150,11 +150,11 @@ Installation
 
       npm install
 
-11. Run webpack:
+11. Build the tag-admin client:
 
    .. code-block:: bash
 
-      ./node_modules/.bin/webpack -p
+      npm run build
 
 Once you've finished these steps, you should be able to start the site by
 running:
@@ -175,14 +175,19 @@ Extra settings
 The following extra settings can be added to your ``.env`` file.
 
 ``GOOGLE_TRANSLATE_API_KEY``
-   Set your `Google Cloud Translation API key`_ to use machine translation by Google.
+   Set your `Google Cloud Translation API`_ key to use generic machine translation
+   engine by Google.
+``GOOGLE_AUTOML_PROJECT_ID``
+   Set your `Google Cloud AutoML Translation`_ model ID to use custom machine
+   translation engine by Google.
 ``MICROSOFT_TRANSLATOR_API_KEY``
-   Set your `Microsoft Translator API key`_ to use machine translation by Microsoft.
+   Set your `Microsoft Translator API`_ key to use machine translation by Microsoft.
 ``GOOGLE_ANALYTICS_KEY``
    Set your `Google Analytics key`_ to use Google Analytics.
 ``MANUAL_SYNC``
    Enable Sync button in project Admin.
 
-.. _Microsoft Translator API key: http://msdn.microsoft.com/en-us/library/hh454950
+.. _Microsoft Translator API: http://msdn.microsoft.com/en-us/library/hh454950
 .. _Google Analytics key: https://www.google.com/analytics/
-.. _Google Cloud Translation API key: https://cloud.google.com/translate/
+.. _Google Cloud Translation API: https://cloud.google.com/translate/
+.. _Google Cloud AutoML Translation: https://cloud.google.com/translate/

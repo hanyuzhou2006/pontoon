@@ -16,7 +16,9 @@ from guardian.decorators import permission_required as guardian_permission_requi
 from urllib.parse import urljoin
 from xml.sax.saxutils import escape, quoteattr
 
-from django.db.models import Prefetch
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+from django.db.models import Prefetch, Q
 from django.db.models.query import QuerySet
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
@@ -161,7 +163,8 @@ def _download_file(prefixes, dirnames, vcs_project, relative_path):
                     locale, absolute_path
                 )
                 relative_l10n_path = os.path.relpath(
-                    absolute_l10n_path, vcs_project.locale_directory_paths[locale.code],
+                    absolute_l10n_path,
+                    vcs_project.locale_directory_paths[locale.code],
                 )
                 url = urljoin(prefix, relative_l10n_path)
             else:
@@ -288,8 +291,8 @@ def get_download_content(slug, code, part):
 
         for e in entities_qs:
             entities_dict[e.key] = e.translation_set.filter(
-                approved=True, locale=locale
-            )
+                Q(approved=True) | Q(pretranslated=True)
+            ).filter(locale=locale)
 
         for vcs_translation in resource_file.translations:
             key = vcs_translation.key
@@ -354,7 +357,8 @@ def handle_upload_content(slug, code, part, f, user):
     # Store uploaded file to a temporary file and parse it
     extension = os.path.splitext(f.name)[1]
     with tempfile.NamedTemporaryFile(
-        prefix="strings" if extension == ".xml" else "", suffix=extension,
+        prefix="strings" if extension == ".xml" else "",
+        suffix=extension,
     ) as temp:
         for chunk in f.chunks():
             temp.write(chunk)
@@ -418,6 +422,9 @@ def handle_upload_content(slug, code, part, f, user):
         # Run checks and create TM entries for translations that pass them
         valid_translations = changeset.bulk_check_translations()
         changeset.bulk_create_translation_memory_entries(valid_translations)
+
+        # Remove any TM entries of translations that got rejected
+        changeset.bulk_remove_translation_memory_entries()
 
     TranslatedResource.objects.get(resource=resource, locale=locale).calculate_stats()
 
@@ -578,7 +585,9 @@ def readonly_exists(projects, locale):
         projects = [projects]
 
     return ProjectLocale.objects.filter(
-        project__in=projects, locale=locale, readonly=True,
+        project__in=projects,
+        locale=locale,
+        readonly=True,
     ).exists()
 
 
@@ -614,3 +623,11 @@ def get_search_phrases(search):
         search_list = ['"']
 
     return search_list
+
+
+def is_email(email):
+    try:
+        validate_email(email)
+        return True
+    except ValidationError:
+        return False

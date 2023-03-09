@@ -56,7 +56,8 @@ def translation_memory(request):
 
     except (Locale.DoesNotExist, MultiValueDictKeyError, ValueError) as e:
         return JsonResponse(
-            {"status": False, "message": f"Bad Request: {e}"}, status=400,
+            {"status": False, "message": f"Bad Request: {e}"},
+            status=400,
         )
 
     data = get_translation_memory_data(text, locale, pk)
@@ -72,7 +73,8 @@ def concordance_search(request):
         page = int(request.GET.get("page", 1))
     except (Locale.DoesNotExist, MultiValueDictKeyError, ValueError) as e:
         return JsonResponse(
-            {"status": False, "message": f"Bad Request: {e}"}, status=400,
+            {"status": False, "message": f"Bad Request: {e}"},
+            status=400,
         )
 
     paginator = Paginator(get_concordance_search_data(text, locale), page_results_limit)
@@ -112,7 +114,8 @@ def microsoft_translator(request):
 
     except (MultiValueDictKeyError, ValueError) as e:
         return JsonResponse(
-            {"status": False, "message": f"Bad Request: {e}"}, status=400,
+            {"status": False, "message": f"Bad Request: {e}"},
+            status=400,
         )
 
     url = "https://api.cognitive.microsofttranslator.com/translate"
@@ -125,6 +128,7 @@ def microsoft_translator(request):
     }
     body = [{"Text": text}]
 
+    r = None
     try:
         r = requests.post(url, params=payload, headers=headers, json=body)
         r.raise_for_status()
@@ -134,13 +138,17 @@ def microsoft_translator(request):
         if "error" in root:
             log.error(f"Microsoft Translator error: {root}")
             return JsonResponse(
-                {"status": False, "message": f"Bad Request: {root}"}, status=400,
+                {"status": False, "message": f"Bad Request: {root}"},
+                status=400,
             )
 
         return JsonResponse({"translation": root[0]["translations"][0]["text"]})
 
     except requests.exceptions.RequestException as e:
-        return JsonResponse({"status": False, "message": f"{e}"}, status=r.status_code,)
+        return JsonResponse(
+            {"status": False, "message": f"{e}"},
+            status=r.status_code if r is not None else 500,
+        )
 
 
 @login_required(redirect_field_name="", login_url="/403")
@@ -153,12 +161,17 @@ def google_translate(request):
         if not locale_code:
             raise ValueError("Locale code is empty")
 
+        locale = Locale.objects.filter(google_translate_code=locale_code).first()
+        if not locale:
+            raise ValueError("Locale code not supported")
+
     except (MultiValueDictKeyError, ValueError) as e:
         return JsonResponse(
-            {"status": False, "message": f"Bad Request: {e}"}, status=400,
+            {"status": False, "message": f"Bad Request: {e}"},
+            status=400,
         )
 
-    data = get_google_translate_data(text, locale_code)
+    data = get_google_translate_data(text, locale)
 
     if not data["status"]:
         return JsonResponse(data, status=400)
@@ -184,12 +197,11 @@ def systran_translate(request):
 
     except (Locale.DoesNotExist, MultiValueDictKeyError, ValueError) as e:
         return JsonResponse(
-            {"status": False, "message": f"Bad Request: {e}"}, status=400,
+            {"status": False, "message": f"Bad Request: {e}"},
+            status=400,
         )
 
-    url = (
-        "https://translationpartners-spn9.mysystran.com:8904/translation/text/translate"
-    )
+    url = "https://api-translate.systran.net/translation/text/translate"
 
     payload = {
         "key": api_key,
@@ -200,6 +212,7 @@ def systran_translate(request):
         "format": "text",
     }
 
+    r = None
     try:
         r = requests.post(url, params=payload)
         r.raise_for_status()
@@ -209,13 +222,17 @@ def systran_translate(request):
         if "error" in root:
             log.error(f"SYSTRAN error: {root}")
             return JsonResponse(
-                {"status": False, "message": f"Bad Request: {root}"}, status=400,
+                {"status": False, "message": f"Bad Request: {root}"},
+                status=400,
             )
 
         return JsonResponse({"translation": root["outputs"][0]["output"]})
 
     except requests.exceptions.RequestException as e:
-        return JsonResponse({"status": False, "message": f"{e}"}, status=r.status_code,)
+        return JsonResponse(
+            {"status": False, "message": f"{e}"},
+            status=r.status_code if r is not None else 500,
+        )
 
 
 def caighdean(request):
@@ -225,7 +242,8 @@ def caighdean(request):
         entity = Entity.objects.get(id=entityid)
     except (Entity.DoesNotExist, MultiValueDictKeyError, ValueError) as e:
         return JsonResponse(
-            {"status": False, "message": f"Bad Request: {e}"}, status=400,
+            {"status": False, "message": f"Bad Request: {e}"},
+            status=400,
         )
 
     try:
@@ -244,6 +262,7 @@ def caighdean(request):
         "foinse": "gd",
     }
 
+    r = None
     try:
         r = requests.post(url, data=data)
         r.raise_for_status()
@@ -257,7 +276,10 @@ def caighdean(request):
         return JsonResponse({"original": text, "translation": translation})
 
     except requests.exceptions.RequestException as e:
-        return JsonResponse({"status": False, "message": f"{e}"}, status=r.status_code,)
+        return JsonResponse(
+            {"status": False, "message": f"{e}"},
+            status=r.status_code if r is not None else 500,
+        )
 
 
 def microsoft_terminology(request):
@@ -271,7 +293,8 @@ def microsoft_terminology(request):
 
     except (MultiValueDictKeyError, ValueError) as e:
         return JsonResponse(
-            {"status": False, "message": f"Bad Request: {e}"}, status=400,
+            {"status": False, "message": f"Bad Request: {e}"},
+            status=400,
         )
 
     obj = {}
@@ -292,21 +315,26 @@ def microsoft_terminology(request):
 
     payload = template.render(payload)
 
+    r = None
     try:
         r = requests.post(url, data=payload, headers=headers)
         r.raise_for_status()
 
         translations = []
-        xpath = ".//{http://api.terminology.microsoft.com/terminology}"
+        namespaces = {"a": "https://api.terminology.microsoft.com/terminology"}
         root = ET.fromstring(r.content)
-        results = root.find(xpath + "GetTranslationsResult")
+        results = root.find(
+            ".//{http://api.terminology.microsoft.com/terminology}GetTranslationsResult"
+        )
 
         if results is not None:
             for translation in results:
                 translations.append(
                     {
-                        "source": translation.find(xpath + "OriginalText").text,
-                        "target": translation.find(xpath + "TranslatedText").text,
+                        "source": translation.find("a:OriginalText", namespaces).text,
+                        "target": translation.find(
+                            ".//a:TranslatedText", namespaces
+                        ).text,
                     }
                 )
 
@@ -314,4 +342,7 @@ def microsoft_terminology(request):
         return JsonResponse(obj)
 
     except requests.exceptions.RequestException as e:
-        return JsonResponse({"status": False, "message": f"{e}"}, status=r.status_code,)
+        return JsonResponse(
+            {"status": False, "message": f"{e}"},
+            status=r.status_code if r is not None else 500,
+        )

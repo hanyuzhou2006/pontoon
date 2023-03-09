@@ -12,9 +12,12 @@ from pontoon.test.factories import (
 )
 
 
-@patch("pontoon.pretranslation.tasks.get_translations")
+@patch("pontoon.pretranslation.tasks.get_pretranslations")
 @pytest.mark.django_db
 def test_pretranslate(gt_mock, project_a, locale_a, resource_a, locale_b):
+    project_a.pretranslation_enabled = True
+    project_a.save()
+
     resources = [
         ResourceFactory(project=project_a, path=x, format="po")
         for x in ["resource_x.po", "resource_y.po"]
@@ -31,10 +34,14 @@ def test_pretranslate(gt_mock, project_a, locale_a, resource_a, locale_b):
     TranslatedResourceFactory.create(resource=resources[1], locale=locale_a)
 
     ProjectLocaleFactory.create(
-        project=project_a, locale=locale_a,
+        project=project_a,
+        locale=locale_a,
+        pretranslation_enabled=True,
     )
     ProjectLocaleFactory.create(
-        project=project_a, locale=locale_b,
+        project=project_a,
+        locale=locale_b,
+        pretranslation_enabled=True,
     )
 
     tm_user = User.objects.get(email="pontoon-tm@example.com")
@@ -47,8 +54,8 @@ def test_pretranslate(gt_mock, project_a, locale_a, resource_a, locale_b):
     # Total pretranslations = 2(tr_ax) + 2(tr_bx) + 2(tr_ay)
     assert len(translations) == 6
 
-    # fuzzy count == total pretranslations.
-    assert project_a.fuzzy_strings == 6
+    # pretranslated count == total pretranslations.
+    assert project_a.pretranslated_strings == 6
 
     # latest_translation belongs to pretranslations.
     assert project_a.latest_translation in translations
