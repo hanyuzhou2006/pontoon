@@ -43,7 +43,7 @@ from jsonfield import JSONField
 from pontoon.actionlog.models import ActionLog
 from pontoon.actionlog.utils import log_action
 from pontoon.base import utils
-from pontoon.base.templatetags.helpers import as_simple_translation
+from pontoon.base.fluent import get_simple_preview
 from pontoon.checks import DB_FORMATS
 from pontoon.checks.utils import save_failed_checks
 from pontoon.db import IContainsCollate, LevenshteinDistance  # noqa
@@ -907,7 +907,7 @@ class Locale(AggregatedStats):
             "pk": self.pk,
             "nplurals": self.nplurals,
             "plural_rule": self.plural_rule,
-            "cldr_plurals": self.cldr_plurals_list(),
+            "cldr_plurals": self.cldr_plurals_list_string(),
             "direction": self.direction,
             "script": self.script,
             "google_translate_code": self.google_translate_code,
@@ -923,7 +923,10 @@ class Locale(AggregatedStats):
             return [int(p) for p in self.cldr_plurals.split(",")]
 
     def cldr_plurals_list(self):
-        return ", ".join(map(Locale.cldr_id_to_plural, self.cldr_id_list()))
+        return map(Locale.cldr_id_to_plural, self.cldr_id_list())
+
+    def cldr_plurals_list_string(self):
+        return ", ".join(self.cldr_plurals_list())
 
     @classmethod
     def cldr_plural_to_id(self, cldr_plural):
@@ -2904,16 +2907,6 @@ class Entity(DirtyFieldsMixin, models.Model):
         """
         return locale in self.changed_locales.all()
 
-    def mark_changed(self, locale):
-        """
-        Mark the given locale as having changed translations since the
-        last sync.
-        """
-        if self.resource.project.data_source == Project.DataSource.DATABASE:
-            return
-
-        ChangedEntityLocale.objects.get_or_create(entity=self, locale=locale)
-
     def get_active_translation(self, plural_form=None):
         """
         Get active translation for a given entity and plural form.
@@ -3282,6 +3275,24 @@ class TranslationQuerySet(models.QuerySet):
 
         return translations
 
+    def bulk_mark_changed(self):
+        changed_entities = {}
+        existing = ChangedEntityLocale.objects.values_list(
+            "entity", "locale"
+        ).distinct()
+
+        for translation in self.exclude(
+            entity__resource__project__data_source=Project.DataSource.DATABASE
+        ):
+            key = (translation.entity.pk, translation.locale.pk)
+
+            if key not in existing:
+                changed_entities[key] = ChangedEntityLocale(
+                    entity=translation.entity, locale=translation.locale
+                )
+
+        ChangedEntityLocale.objects.bulk_create(changed_entities.values())
+
 
 class Translation(DirtyFieldsMixin, models.Model):
     entity = models.ForeignKey(Entity, models.CASCADE)
@@ -3434,7 +3445,7 @@ class Translation(DirtyFieldsMixin, models.Model):
         source = self.entity.string
 
         if self.entity.resource.format == Resource.Format.FTL:
-            return as_simple_translation(source)
+            return get_simple_preview(source)
 
         return source
 
@@ -3443,7 +3454,7 @@ class Translation(DirtyFieldsMixin, models.Model):
         target = self.string
 
         if self.entity.resource.format == Resource.Format.FTL:
-            return as_simple_translation(target)
+            return get_simple_preview(target)
 
         return target
 
@@ -3508,7 +3519,7 @@ class Translation(DirtyFieldsMixin, models.Model):
         # changed in the appropriate locale. We could be smarter about
         # this but for now this is fine.
         if self.approved:
-            self.entity.mark_changed(self.locale)
+            self.mark_changed()
 
         if project.slug == "terminology":
             self.entity.reset_term_translation(self.locale)
@@ -3591,7 +3602,7 @@ class Translation(DirtyFieldsMixin, models.Model):
                 project=self.entity.resource.project,
             )
 
-        self.entity.mark_changed(self.locale)
+        self.mark_changed()
 
     def unapprove(self, user):
         """
@@ -3603,7 +3614,7 @@ class Translation(DirtyFieldsMixin, models.Model):
         self.save()
 
         TranslationMemoryEntry.objects.filter(translation=self).delete()
-        self.entity.mark_changed(self.locale)
+        self.mark_changed()
 
     def reject(self, user):
         """
@@ -3613,7 +3624,7 @@ class Translation(DirtyFieldsMixin, models.Model):
         # We must do this before rejecting it.
         if self.approved or self.pretranslated or self.fuzzy:
             TranslationMemoryEntry.objects.filter(translation=self).delete()
-            self.entity.mark_changed(self.locale)
+            self.mark_changed()
 
         self.rejected = True
         self.rejected_user = user
@@ -3645,6 +3656,18 @@ class Translation(DirtyFieldsMixin, models.Model):
             "errors": [error.message for error in self.errors.all()],
             "warnings": [warning.message for warning in self.warnings.all()],
         }
+
+    def mark_changed(self):
+        """
+        Mark the given locale as having changed translations since the
+        last sync.
+        """
+        if self.entity.resource.project.data_source == Project.DataSource.DATABASE:
+            return
+
+        ChangedEntityLocale.objects.get_or_create(
+            entity=self.entity, locale=self.locale
+        )
 
 
 class TranslationMemoryEntryQuerySet(models.QuerySet):
