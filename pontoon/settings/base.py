@@ -49,16 +49,11 @@ def _get_site_url_netloc():
 
 def _default_from_email():
     return os.environ.get(
-        "DEFAULT_FROM_EMAIL", f"Pontoon <noreply@{_get_site_url_netloc()}>"
+        "DEFAULT_FROM_EMAIL", f"Pontoon <pontoon@{_get_site_url_netloc()}>"
     )
 
 
 DEFAULT_FROM_EMAIL = lazy(_default_from_email, str)()
-
-# Email from which new locale requests are sent.
-LOCALE_REQUEST_FROM_EMAIL = os.environ.get(
-    "LOCALE_REQUEST_FROM_EMAIL", "pontoon@example.com"
-)
 
 # VCS identity to be used when committing translations.
 VCS_SYNC_NAME = os.environ.get("VCS_SYNC_NAME", "Pontoon")
@@ -101,6 +96,85 @@ BROKER_URL = os.environ.get("RABBITMQ_URL", None)
 
 # Google Cloud Translation API key
 GOOGLE_TRANSLATE_API_KEY = os.environ.get("GOOGLE_TRANSLATE_API_KEY", "")
+
+# Pontoon locale codes supported by Google Cloud AutoML Translation Project ID
+#
+# Source:
+# https://cloud.google.com/translate/automl/docs/languages#supported_codes_for_language_variants
+GOOGLE_AUTOML_SUPPORTED_LOCALES = [
+    "af",
+    "ar",
+    "az",
+    "bg",
+    "bn",
+    "ca",
+    "cs",
+    "cy",
+    "da",
+    "de",
+    "el",
+    "es",
+    "es-AR",
+    "es-CL",
+    "es-ES",
+    "es-MX",
+    "et",
+    "fa",
+    "fi",
+    "fil",
+    "fr",
+    "gl",
+    "gu-IN",
+    "he",
+    "hi",
+    "hi-IN",
+    "hr",
+    "ht",
+    "hu",
+    "id",
+    "is",
+    "it",
+    "ja",
+    "jv",
+    "ka",
+    "km",
+    "ko",
+    "lt",
+    "lv",
+    "mr",
+    "ms",
+    "my",
+    "nb-NO",
+    "ne-NP",
+    "nl",
+    "pa-IN",
+    "pa-PK",
+    "pl",
+    "ps",
+    "pt",
+    "pt-BR",
+    "pt-PT",
+    "ro",
+    "ru",
+    "sk",
+    "sl",
+    "sq",
+    "sr",
+    "sv-SE",
+    "sw",
+    "ta",
+    "te",
+    "th",
+    "tr",
+    "uk",
+    "ur",
+    "uz",
+    "vi",
+    "zh-CN",
+    "zh-HK",
+    "zh-TW",
+    "zu",
+]
 
 # Google Cloud AutoML Translation Project ID
 GOOGLE_AUTOML_PROJECT_ID = os.environ.get("GOOGLE_AUTOML_PROJECT_ID", "")
@@ -153,7 +227,6 @@ INSTALLED_APPS = (
     "pontoon.base",
     "pontoon.contributors",
     "pontoon.checks",
-    "pontoon.in_context",
     "pontoon.insights",
     "pontoon.localizations",
     "pontoon.machinery",
@@ -188,6 +261,7 @@ INSTALLED_APPS = (
     "allauth.socialaccount.providers.github",
     "allauth.socialaccount.providers.google",
     "allauth.socialaccount.providers.gitlab",
+    "allauth.socialaccount.providers.keycloak",
     "notifications",
     "graphene_django",
     "django_ace",
@@ -414,13 +488,6 @@ PIPELINE_CSS = {
             "css/contributors.css",
         ),
         "output_filename": "css/contributors.min.css",
-    },
-    "in_context": {
-        "source_filenames": (
-            "css/bootstrap.min.css",
-            "css/agency.css",
-        ),
-        "output_filename": "css/in_context.min.css",
     },
     "terms": {
         "source_filenames": ("css/terms.css",),
@@ -852,10 +919,9 @@ CELERY_ACCEPT_CONTENT = ["pickle"]
 
 # Settings related to the CORS mechanisms.
 # For the sake of integration with other sites,
-# some of javascript files (e.g. pontoon.js)
-# require Access-Control-Allow-Origin header to be set as '*'.
+# all origins are allowed for the GraphQL endpoint.
 CORS_ALLOW_ALL_ORIGINS = True
-CORS_URLS_REGEX = r"^/(pontoon\.js|graphql/?)$"
+CORS_URLS_REGEX = r"^/graphql/?$"
 
 SOCIALACCOUNT_ENABLED = True
 SOCIALACCOUNT_ADAPTER = "pontoon.base.adapter.PontoonSocialAdapter"
@@ -894,6 +960,10 @@ GITLAB_SECRET_KEY = os.environ.get("GITLAB_SECRET_KEY")
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 GOOGLE_SECRET_KEY = os.environ.get("GOOGLE_SECRET_KEY")
 
+# Keycloak Accounts
+KEYCLOAK_CLIENT_ID = os.environ.get("KEYCLOAK_CLIENT_ID")
+KEYCLOAK_CLIENT_SECRET = os.environ.get("KEYCLOAK_CLIENT_SECRET")
+
 # All settings related to the AllAuth
 SOCIALACCOUNT_PROVIDERS = {
     "fxa": {
@@ -902,15 +972,11 @@ SOCIALACCOUNT_PROVIDERS = {
         "PROFILE_ENDPOINT": FXA_PROFILE_ENDPOINT,
     },
     "gitlab": {"GITLAB_URL": GITLAB_URL, "SCOPE": ["read_user"]},
+    "keycloak": {
+        "KEYCLOAK_URL": os.environ.get("KEYCLOAK_URL"),
+        "KEYCLOAK_REALM": os.environ.get("KEYCLOAK_REALM"),
+    },
 }
-
-# Defined all trusted origins that will be returned in pontoon.js file.
-if os.environ.get("JS_TRUSTED_ORIGINS"):
-    JS_TRUSTED_ORIGINS = os.environ.get("JS_TRUSTED_ORIGINS").split(",")
-else:
-    JS_TRUSTED_ORIGINS = [
-        SITE_URL,
-    ]
 
 # Configuration of `django-notifications-hq` app
 DJANGO_NOTIFICATIONS_CONFIG = {

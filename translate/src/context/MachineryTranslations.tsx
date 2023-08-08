@@ -4,7 +4,6 @@ import {
   abortMachineryRequests,
   fetchCaighdeanTranslation,
   fetchGoogleTranslation,
-  fetchMicrosoftTerminology,
   fetchMicrosoftTranslation,
   fetchSystranTranslation,
   fetchTranslationMemory,
@@ -111,10 +110,6 @@ export function MachineryProvider({
         if (locale.systranTranslateCode) {
           fetchSystranTranslation(plain, locale).then(addResults);
         }
-      }
-
-      if (locale.msTerminologyCode) {
-        fetchMicrosoftTerminology(plain, locale).then(addResults);
       }
 
       if (locale.code === 'ga-IE' && pk) {

@@ -14,10 +14,10 @@ from pontoon.base.models import (
     ProjectLocale,
     Repository,
     Resource,
-    Subpage,
     TranslatedResource,
     Translation,
     TranslationMemoryEntry,
+    ProjectSlugHistory,
 )
 from pontoon.checks.models import Error, Warning
 from pontoon.tags.models import Tag
@@ -42,7 +42,6 @@ class GroupFactory(DjangoModelFactory):
 class ProjectFactory(DjangoModelFactory):
     name = Sequence(lambda n: f"Project {n}")
     slug = LazyAttribute(lambda p: slugify(p.name))
-    links = False
     visibility = Project.Visibility.PUBLIC
 
     class Meta:
@@ -91,14 +90,6 @@ class ResourceFactory(DjangoModelFactory):
 
     class Meta:
         model = Resource
-
-
-class SubpageFactory(DjangoModelFactory):
-    project = SubFactory(ProjectFactory)
-    name = Sequence(lambda n: "subpage%s" % n)
-
-    class Meta:
-        model = Subpage
 
 
 class LocaleFactory(DjangoModelFactory):
@@ -211,3 +202,11 @@ class TermTranslationFactory(DjangoModelFactory):
 
     class Meta:
         model = TermTranslation
+
+
+class ProjectSlugHistoryFactory(DjangoModelFactory):
+    project = SubFactory(ProjectFactory)
+    old_slug = Sequence(lambda n: f"old-slug-{n}")
+
+    class Meta:
+        model = ProjectSlugHistory

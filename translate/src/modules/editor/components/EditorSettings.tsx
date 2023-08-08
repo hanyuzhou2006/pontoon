@@ -1,8 +1,9 @@
 import { Localized } from '@fluent/react';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { Settings } from '~/modules/user';
 import { useOnDiscard } from '~/utils';
+import { useTranslator } from '~/hooks/useTranslator';
 
 import './EditorSettings.css';
 
@@ -22,8 +23,17 @@ export function EditorSettingsDialog({
   toggleSetting,
   onDiscard,
 }: EditorSettingsProps): React.ReactElement<'ul'> {
-  const ref = useRef(null);
+  const ref = useRef<HTMLUListElement>(null);
+  const isTranslator = useTranslator();
   useOnDiscard(ref, onDiscard);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    ref.current?.scrollIntoView({
+      behavior: mediaQuery?.matches ? 'auto' : 'smooth',
+      block: 'nearest',
+    });
+  });
 
   return (
     <ul ref={ref} className='menu'>
@@ -39,30 +49,32 @@ export function EditorSettingsDialog({
           title='Run Translate Toolkit checks before submitting translations'
           onClick={() => toggleSetting('runQualityChecks')}
         >
-          {'<glyph></glyph>Translate Toolkit Checks'}
+          {'<glyph></glyph>Translate Toolkit checks'}
         </li>
       </Localized>
 
-      <Localized
-        id='editor-EditorSettings--force-suggestions'
-        attrs={{ title: true }}
-        elems={{ glyph: <i className='fa fa-fw' /> }}
-      >
-        <li
-          className={
-            'check-box' + (settings.forceSuggestions ? ' enabled' : '')
-          }
-          title='Save suggestions instead of translations'
-          onClick={() => toggleSetting('forceSuggestions')}
+      {isTranslator ? (
+        <Localized
+          id='editor-EditorSettings--force-suggestions'
+          attrs={{ title: true }}
+          elems={{ glyph: <i className='fa fa-fw' /> }}
         >
-          {'<glyph></glyph>Make Suggestions'}
-        </li>
-      </Localized>
+          <li
+            className={
+              'check-box' + (settings.forceSuggestions ? ' enabled' : '')
+            }
+            title='Save suggestions instead of translations'
+            onClick={() => toggleSetting('forceSuggestions')}
+          >
+            {'<glyph></glyph>Make suggestions'}
+          </li>
+        </Localized>
+      ) : null}
 
       <li className='horizontal-separator'></li>
       <li>
         <Localized id='editor-EditorSettings--change-all'>
-          <a href='/settings/'>{'Change All Settings'}</a>
+          <a href='/settings/'>{'Change all settings'}</a>
         </Localized>
       </li>
     </ul>

@@ -20,8 +20,9 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.db.models import Prefetch, Q
 from django.db.models.query import QuerySet
-from django.http import HttpResponseBadRequest
-from django.shortcuts import get_object_or_404
+from django.http import HttpResponseBadRequest, Http404
+from django.shortcuts import redirect, get_object_or_404
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import trans_real
@@ -188,25 +189,13 @@ def _download_file(prefixes, dirnames, vcs_project, relative_path):
             return temp.name
 
 
-def _get_relative_path_from_part(slug, part):
-    """Check if part is a Resource path or Subpage name."""
-    # Avoid circular import; someday we should refactor to avoid.
-    from pontoon.base.models import Subpage
-
-    try:
-        subpage = Subpage.objects.get(project__slug=slug, name=part)
-        return subpage.resources.first().path
-    except Subpage.DoesNotExist:
-        return part
-
-
 def get_download_content(slug, code, part):
     """
     Get content of the file to be downloaded.
 
     :arg str slug: Project slug.
     :arg str code: Locale code.
-    :arg str part: Resource path or Subpage name.
+    :arg str part: Resource path.
     """
     # Avoid circular import; someday we should refactor to avoid.
     from pontoon.sync import formats
@@ -229,10 +218,7 @@ def get_download_content(slug, code, part):
 
     # Download a single file if project has 1 or >= 10 resources
     else:
-        relative_path = _get_relative_path_from_part(slug, part)
-        resources = [
-            get_object_or_404(Resource, project__slug=slug, path=relative_path)
-        ]
+        resources = [get_object_or_404(Resource, project__slug=slug, path=part)]
 
     locale_prefixes = project.repositories
 
@@ -260,7 +246,7 @@ def get_download_content(slug, code, part):
 
         # Get source file if needed
         source_path = None
-        if resource.is_asymmetric:
+        if resource.is_asymmetric or resource.format == "xliff":
             dirnames = VCSProject.SOURCE_DIR_NAMES
             source_path = _download_file(
                 source_prefixes, dirnames, vcs_project, resource.path
@@ -331,7 +317,7 @@ def handle_upload_content(slug, code, part, f, user):
 
     :arg str slug: Project slug.
     :arg str code: Locale code.
-    :arg str part: Resource path or Subpage name.
+    :arg str part: Resource path.
     :arg UploadedFile f: UploadedFile instance.
     :arg User user: User uploading the file.
     """
@@ -348,10 +334,9 @@ def handle_upload_content(slug, code, part, f, user):
         Translation,
     )
 
-    relative_path = _get_relative_path_from_part(slug, part)
     project = get_object_or_404(Project, slug=slug)
     locale = get_object_or_404(Locale, code=code)
-    resource = get_object_or_404(Resource, project__slug=slug, path=relative_path)
+    resource = get_object_or_404(Resource, project__slug=slug, path=part)
 
     # Store uploaded file to a temporary file and parse it
     extension = os.path.splitext(f.name)[1]
@@ -370,7 +355,7 @@ def handle_upload_content(slug, code, part, f, user):
     )
     entities_qs = (
         Entity.objects.filter(
-            resource__project=project, resource__path=relative_path, obsolete=False
+            resource__project=project, resource__path=part, obsolete=False
         )
         .prefetch_related(
             Prefetch(
@@ -622,3 +607,32 @@ def is_email(email):
         return True
     except ValidationError:
         return False
+
+
+def get_project_or_redirect(
+    slug, redirect_view_name, slug_arg_name, request_user, **kwargs
+):
+    """
+    Attempts to get a project with the given slug. If the project doesn't exist, it checks if the slug is in the
+    ProjectSlugHistory and if so, it redirects to the current project slug URL. If the old slug is not found in the
+    history, it raises an Http404 error.
+    """
+    # Avoid circular import; someday we should refactor to avoid.
+    from pontoon.base.models import Project, ProjectSlugHistory
+
+    try:
+        project = Project.objects.visible_for(request_user).available().get(slug=slug)
+        return project
+    except Project.DoesNotExist:
+        slug_history = (
+            ProjectSlugHistory.objects.filter(old_slug=slug)
+            .order_by("-created_at")
+            .first()
+        )
+        if slug_history is not None:
+            redirect_kwargs = {slug_arg_name: slug_history.project.slug}
+            redirect_kwargs.update(kwargs)
+            redirect_url = reverse(redirect_view_name, kwargs=redirect_kwargs)
+            return redirect(redirect_url)
+        else:
+            raise Http404

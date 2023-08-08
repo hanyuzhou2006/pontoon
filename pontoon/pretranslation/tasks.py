@@ -8,14 +8,17 @@ from pontoon.base.models import (
     Entity,
     TranslatedResource,
     Translation,
+    User,
 )
 from pontoon.actionlog.models import ActionLog
+from pontoon.pretranslation import AUTHORS
 from pontoon.pretranslation.pretranslate import (
     get_pretranslations,
     update_changed_instances,
 )
 from pontoon.base.tasks import PontoonTask
 from pontoon.sync.core import serial_task
+from pontoon.checks.libraries import run_checks
 from pontoon.checks.utils import bulk_run_checks
 
 
@@ -68,7 +71,7 @@ def pretranslate(self, project_pk, locales=None, entities=None):
 
     entities = entities.prefetch_related("resource")
 
-    # get available TranslatedResource pairs
+    # Fetch all available locale-resource pairs (TranslatedResource objects)
     tr_pairs = (
         TranslatedResource.objects.filter(
             resource__project=project,
@@ -83,12 +86,14 @@ def pretranslate(self, project_pk, locales=None, entities=None):
         .distinct()
     )
 
-    # Fetch all distinct locale-entity pairs for which translation exists
+    # Fetch all locale-entity pairs with non-rejected or pretranslated translations
+    pt_authors = [User.objects.get(email=email) for email in AUTHORS.values()]
     translated_entities = (
         Translation.objects.filter(
             locale__in=locales,
             entity__in=entities,
         )
+        .filter(Q(rejected=False) | Q(user__in=pt_authors))
         .annotate(
             locale_entity=Concat(
                 "locale_id", V("-"), "entity_id", output_field=CharField()
@@ -120,6 +125,19 @@ def pretranslate(self, project_pk, locales=None, entities=None):
 
             if not pretranslations:
                 continue
+
+            failed_checks = run_checks(
+                entity,
+                locale.code,
+                entity.string,
+                pretranslations[0][0],
+                use_tt_checks=False,
+            )
+
+            if failed_checks:
+                pretranslations = get_pretranslations(
+                    entity, locale, preserve_placeables=True
+                )
 
             for string, plural_form, user in pretranslations:
                 t = Translation(
@@ -171,7 +189,12 @@ def pretranslate(self, project_pk, locales=None, entities=None):
     bulk_run_checks(Translation.objects.for_checks().filter(pk__in=translation_pks))
 
     # Mark translations as changed
-    changed_translations = Translation.objects.filter(pk__in=translation_pks)
+    changed_translations = Translation.objects.filter(
+        pk__in=translation_pks,
+        # Do not sync translations with errors and warnings
+        errors__isnull=True,
+        warnings__isnull=True,
+    )
     changed_translations.bulk_mark_changed()
 
     # Update latest activity and stats for changed instances.

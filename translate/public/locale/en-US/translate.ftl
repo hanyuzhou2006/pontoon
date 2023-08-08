@@ -134,13 +134,13 @@ editor-EditorMenu--button-suggesting = <glyph></glyph>SUGGESTING
 ## Editor Settings
 ## Shows options to update user settings regarding the editor.
 
-editor-EditorSettings--toolkit-checks = <glyph></glyph>Translate Toolkit Checks
+editor-EditorSettings--toolkit-checks = <glyph></glyph>Translate Toolkit checks
     .title = Run Translate Toolkit checks before submitting translations
 
-editor-EditorSettings--force-suggestions = <glyph></glyph>Make Suggestions
+editor-EditorSettings--force-suggestions = <glyph></glyph>Make suggestions
     .title = Save suggestions instead of translations
 
-editor-EditorSettings--change-all = Change All Settings
+editor-EditorSettings--change-all = Change all settings
 
 
 ## Editor FTL Source Editor Switch
@@ -276,9 +276,6 @@ entitydetails-Metadata--context =
 entitydetails-Metadata--placeholder =
     .title = PLACEHOLDER EXAMPLES
 
-entitydetails-Metadata--resource =
-    .title = RESOURCE
-
 entitydetails-Metadata--attribute =
     .title = FLUENT ATTRIBUTE
 
@@ -361,9 +358,16 @@ history-Translation--button-comments = { $commentCount ->
 history-Translation--span-copied =
     .title = Copied ({ $machinerySources })
 
-history-translation--approved = Approved by { $user }
-history-translation--rejected = Rejected by { $user }
-history-translation--unreviewed = Not reviewed yet
+history-translation--approved =
+    .title = Approved by { $user }
+history-translation--approved-anonymous =
+    .title = Approved
+history-translation--rejected =
+    .title = Rejected by { $user }
+history-translation--rejected-anonymous =
+    .title = Rejected
+history-translation--unreviewed =
+    .title = Not reviewed yet
 
 
 ## Interactive Tour
@@ -383,7 +387,7 @@ interactivetour-InteractiveTour--main-toolbar-content =
     see the progress of your current localization and additional
     project information.
 interactivetour-InteractiveTour--main-toolbar-footer =
-    On the right hand side, logged in users can access notifications
+    On the right hand side, logged-in users can access notifications
     and settings.
 
 interactivetour-InteractiveTour--string-list-title = String List

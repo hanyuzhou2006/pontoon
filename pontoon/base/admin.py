@@ -208,19 +208,6 @@ class RepositoryInline(admin.TabularInline):
     )
 
 
-class SubpageInline(admin.TabularInline):
-    model = models.Subpage
-    extra = 0
-    verbose_name_plural = "Subpages"
-    fields = (
-        "project",
-        "name",
-        "url",
-        "resources",
-    )
-    raw_id_fields = ("resources",)
-
-
 class ProjectAdmin(admin.ModelAdmin):
     search_fields = ["name", "slug"]
     list_display = (
@@ -270,11 +257,9 @@ class ProjectAdmin(admin.ModelAdmin):
                 ),
             },
         ),
-        ("WEBSITE", {"fields": ("url", "width", "links")}),
     )
     readonly_fields = AGGREGATED_STATS_FIELDS + ("latest_translation",)
     inlines = (
-        SubpageInline,
         ProjectLocaleInline,
         RepositoryInline,
         ExternalProjectResourceInline,
@@ -305,6 +290,10 @@ class EntityAdmin(admin.ModelAdmin):
 
 class TranslationAdmin(admin.ModelAdmin):
     raw_id_fields = ("entity",)
+
+
+class ProjectSlugHistoryAdmin(admin.ModelAdmin):
+    readonly_fields = ("created_at",)
 
 
 class CommentAdmin(admin.ModelAdmin):
@@ -382,3 +371,4 @@ admin.site.register(models.TranslationMemoryEntry, TranslationMemoryEntryAdmin)
 admin.site.register(models.ChangedEntityLocale, ChangedEntityLocaleAdmin)
 admin.site.register(models.PermissionChangelog, UserRoleLogActionAdmin)
 admin.site.register(models.Comment, CommentAdmin)
+admin.site.register(models.ProjectSlugHistory, ProjectSlugHistoryAdmin)

@@ -9,11 +9,12 @@ from fluent.syntax import FluentParser, FluentSerializer
 from functools import reduce
 
 from pontoon.base.models import User, TranslatedResource
-from pontoon.base.fluent import FlatTransformer, create_locale_plural_variants
 from pontoon.machinery.utils import (
     get_google_translate_data,
     get_translation_memory_data,
 )
+from pontoon.pretranslation import AUTHORS
+from .transformer import ApplyPretranslation
 
 
 log = logging.getLogger(__name__)
@@ -22,29 +23,7 @@ parser = FluentParser()
 serializer = FluentSerializer()
 
 
-class PretranslationTransformer(FlatTransformer):
-    def __init__(self, locale):
-        self.services = []
-        self.locale = locale
-
-    def visit_SelectExpression(self, node):
-        create_locale_plural_variants(node, self.locale)
-        return self.generic_visit(node)
-
-    def visit_TextElement(self, node):
-        pretranslation, service = get_pretranslated_data(node.value, self.locale)
-
-        if pretranslation is None:
-            raise ValueError(
-                f"Pretranslation for `{node.value}` to {self.locale.code} not available."
-            )
-
-        node.value = pretranslation
-        self.services.append(service)
-        return node
-
-
-def get_pretranslations(entity, locale):
+def get_pretranslations(entity, locale, preserve_placeables=False):
     """
     Get pretranslations for the entity-locale pair using internal translation memory and
     Google's machine translation.
@@ -55,6 +34,7 @@ def get_pretranslations(entity, locale):
 
     :arg Entity entity: the Entity object
     :arg Locale locale: the Locale object
+    :arg boolean preserve_placeables
 
     :returns: a list of tuples, consisting of:
         - a pretranslation of the entity
@@ -62,30 +42,31 @@ def get_pretranslations(entity, locale):
         - a user (representing TM or GT service)
     """
     source = entity.string
-    services = {
-        "tm": User.objects.get(email="pontoon-tm@example.com"),
-        "gt": User.objects.get(email="pontoon-gt@example.com"),
-    }
+    services = {k: User.objects.get(email=email) for k, email in AUTHORS.items()}
 
     if entity.resource.format == "ftl":
-        source_ast = parser.parse_entry(source)
-        pt_transformer = PretranslationTransformer(locale)
+        entry = parser.parse_entry(source)
+        pretranslate = ApplyPretranslation(
+            locale, entry, get_pretranslated_data, preserve_placeables
+        )
 
         try:
-            pretranslated_ast = pt_transformer.visit(source_ast)
+            pretranslate.visit(entry)
         except ValueError as e:
             log.info(f"Fluent pretranslation error: {e}")
             return []
 
-        pretranslation = serializer.serialize_entry(pretranslated_ast)
+        pretranslation = serializer.serialize_entry(entry)
 
-        authors = [services[service] for service in pt_transformer.services]
+        authors = [services[service] for service in pretranslate.services]
         author = max(set(authors), key=authors.count) if authors else services["tm"]
 
         return [(pretranslation, None, author)]
 
     else:
-        pretranslation, service = get_pretranslated_data(source, locale)
+        pretranslation, service = get_pretranslated_data(
+            source, locale, preserve_placeables
+        )
 
         if pretranslation is None:
             return []
@@ -100,7 +81,7 @@ def get_pretranslations(entity, locale):
             ]
 
 
-def get_pretranslated_data(source, locale):
+def get_pretranslated_data(source, locale, preserve_placeables):
     # Empty strings do not need translation
     if re.search("^\\s*$", source):
         return source, "tm"
@@ -113,7 +94,9 @@ def get_pretranslated_data(source, locale):
 
     # Fetch from Google Translate
     elif locale.google_translate_code:
-        gt_response = get_google_translate_data(text=source, locale=locale)
+        gt_response = get_google_translate_data(
+            text=source, locale=locale, preserve_placeables=preserve_placeables
+        )
         if gt_response["status"]:
             return gt_response["translation"], "gt"
 
