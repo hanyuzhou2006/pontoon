@@ -2,11 +2,20 @@
 Test consistency of calculations between `calculate_stats` and `translation.save()`.
 """
 import pytest
-from pontoon.base.models import TranslatedResource
+from pontoon.base.models import Project, TranslatedResource, Translation
 from pontoon.checks.models import (
     Error,
     Warning,
     FailedCheck,
+)
+from pontoon.test.factories import (
+    EntityFactory,
+    LocaleFactory,
+    ProjectFactory,
+    ProjectLocaleFactory,
+    ResourceFactory,
+    TranslatedResourceFactory,
+    UserFactory,
 )
 
 
@@ -200,3 +209,54 @@ def test_translation_with_warning(stats_update, get_stats, translation_with_warn
         "warnings": 0,
         "errors": 0,
     }
+
+
+def test_private_project_stats_do_not_update_locale():
+    locale = LocaleFactory.create()
+    project = ProjectFactory.create(
+        visibility=Project.Visibility.PRIVATE,
+        repositories=[],
+        total_strings=1,
+        unreviewed_strings=1,
+    )
+    project_locale = ProjectLocaleFactory.create(
+        project=project,
+        locale=locale,
+        total_strings=1,
+        unreviewed_strings=1,
+    )
+    resource = ResourceFactory.create(project=project, total_strings=1)
+    translated_resource = TranslatedResourceFactory.create(
+        resource=resource,
+        locale=locale,
+        total_strings=1,
+        unreviewed_strings=1,
+    )
+    entity = EntityFactory.create(resource=resource)
+    translation = Translation(
+        entity=entity,
+        locale=locale,
+        string="translation",
+        user=UserFactory.create(),
+    )
+    translation.save(update_stats=False)
+    locale.aggregate_stats()
+    locale.refresh_from_db()
+
+    assert locale.unreviewed_strings == 0
+
+    translation.approved = True
+    translation.save()
+
+    locale.refresh_from_db()
+    project.refresh_from_db()
+    project_locale.refresh_from_db()
+    translated_resource.refresh_from_db()
+
+    assert locale.unreviewed_strings == 0
+    assert project.approved_strings == 1
+    assert project.unreviewed_strings == 0
+    assert project_locale.approved_strings == 1
+    assert project_locale.unreviewed_strings == 0
+    assert translated_resource.approved_strings == 1
+    assert translated_resource.unreviewed_strings == 0
