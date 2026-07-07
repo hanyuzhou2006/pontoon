@@ -1,6 +1,7 @@
 import type {
   CatchallKey,
   Message,
+  Pattern,
   PatternElement,
   PatternMessage,
   SelectMessage,
@@ -41,6 +42,10 @@ export function getEmptyMessageEntry(
   return { id: source.id, value: getEmptyMessage(source.value, locale) };
 }
 
+const getEmptyPattern = (): Pattern => ({
+  body: [{ type: 'text', value: '' }],
+});
+
 function getEmptyMessage(
   source: Message,
   { code }: Locale,
@@ -48,7 +53,7 @@ function getEmptyMessage(
   const declarations = pojoCopy(source.declarations);
 
   if (source.type === 'message' || source.type === 'junk') {
-    return { type: 'message', declarations, pattern: { body: [] } };
+    return { type: 'message', declarations, pattern: getEmptyPattern() };
   }
 
   const plurals = findPluralSelectors(source);
@@ -63,7 +68,7 @@ function getEmptyMessage(
       continue;
     }
 
-    let keys: Variant['keys'] = [];
+    const keys: Variant['keys'] = [];
     let catchall: CatchallKey | null = null;
     if (plurals.includes(i)) {
       const exactKeys = new Set<string>();
@@ -75,11 +80,15 @@ function getEmptyMessage(
           exactKeys.add(k.value);
         }
       }
+      for (const key of exactKeys) {
+        keys.push({ type: 'nmtoken', value: key });
+      }
 
       const pc = getPluralCategories(code);
-      keys = Array.from(exactKeys)
-        .concat(pc.filter((cat) => cat !== 'other'))
-        .map((value) => ({ type: 'nmtoken', value }));
+      catchall = { type: '*', value: pc.pop() } as CatchallKey;
+      for (const cat of pc) {
+        keys.push({ type: 'nmtoken', value: cat });
+      }
     } else {
       const keyValues = new Set<string>();
       for (const v of source.variants) {
@@ -111,9 +120,12 @@ function getEmptyMessage(
   }
 
   if (selectors.length === 0) {
-    return { type: 'message', declarations, pattern: { body: [] } };
+    return { type: 'message', declarations, pattern: getEmptyPattern() };
   }
 
-  const variants = variantKeys.map((keys) => ({ keys, value: { body: [] } }));
+  const variants = variantKeys.map((keys) => ({
+    keys,
+    value: getEmptyPattern(),
+  }));
   return { type: 'select', declarations, selectors, variants };
 }

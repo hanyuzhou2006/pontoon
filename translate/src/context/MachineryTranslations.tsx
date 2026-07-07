@@ -4,13 +4,12 @@ import {
   abortMachineryRequests,
   fetchCaighdeanTranslation,
   fetchGoogleTranslation,
-  fetchMicrosoftTerminology,
   fetchMicrosoftTranslation,
   fetchSystranTranslation,
   fetchTranslationMemory,
   MachineryTranslation,
 } from '~/api/machinery';
-import { USER } from '~/core/user';
+import { USER } from '~/modules/user';
 import { useAppSelector } from '~/hooks';
 import { getPlainMessage } from '~/utils/message';
 
@@ -111,10 +110,6 @@ export function MachineryProvider({
         if (locale.systranTranslateCode) {
           fetchSystranTranslation(plain, locale).then(addResults);
         }
-      }
-
-      if (locale.msTerminologyCode) {
-        fetchMicrosoftTerminology(plain, locale).then(addResults);
       }
 
       if (locale.code === 'ga-IE' && pk) {

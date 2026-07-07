@@ -1,4 +1,4 @@
-import { Localized, useLocalization } from '@fluent/react';
+import { Localized } from '@fluent/react';
 import classNames from 'classnames';
 import React, { useCallback, useContext, useState } from 'react';
 import ReactTimeAgo from 'react-time-ago';
@@ -7,9 +7,9 @@ import type { Entity } from '~/api/entity';
 import type { ChangeOperation, HistoryTranslation } from '~/api/translation';
 import { EditorActions } from '~/context/Editor';
 import { Locale } from '~/context/Locale';
-import { CommentsList } from '~/core/comments/components/CommentsList';
-import { Translation } from '~/core/translation';
-import { UserAvatar, UserState } from '~/core/user';
+import { CommentsList } from '~/modules/comments/components/CommentsList';
+import { Translation } from '~/modules/translation';
+import { UserAvatar, UserState } from '~/modules/user';
 import { withActionsDisabled } from '~/utils';
 import { useTranslator } from '~/hooks/useTranslator';
 
@@ -129,7 +129,7 @@ const User = ({
       {user}
     </a>
   ) : (
-    <span>{user}</span>
+    <span title={title}>{user}</span>
   );
 
 /**
@@ -153,7 +153,6 @@ export function HistoryTranslationBase({
   updateTranslationStatus,
   user,
 }: InternalProps): React.ReactElement<'li'> {
-  const { l10n } = useLocalization();
   const [isDiffVisible, setDiffVisible] = useState(false);
   const [areCommentsVisible, setCommentsVisible] = useState(false);
   const isTranslator = useTranslator();
@@ -195,27 +194,25 @@ export function HistoryTranslationBase({
     setEditorFromHistory(translation.string);
   }, [isReadOnlyEditor, setEditorFromHistory, translation.string]);
 
-  let approvalTitle: string;
-  if (translation.approved && translation.approvedUser) {
-    const user = translation.approvedUser;
-    approvalTitle = l10n.getString(
-      'history-translation--approved',
-      { user },
-      `Approved by ${user}`,
-    );
-  } else if (translation.unapprovedUser) {
-    const user = translation.unapprovedUser;
-    approvalTitle = l10n.getString(
-      'history-translation--unapproved',
-      { user },
-      `Unapproved by ${user}`,
-    );
-  } else {
-    approvalTitle = l10n.getString(
-      'history-translation--unreviewed',
-      null,
-      'Not reviewed yet',
-    );
+  const review = {
+    id: 'history-translation--unreviewed',
+    vars: { user: '' },
+    attrs: { title: true },
+  };
+  if (translation.approved) {
+    if (translation.approvedUser) {
+      review.vars.user = translation.approvedUser;
+      review.id = 'history-translation--approved';
+    } else {
+      review.id = 'history-translation--approved-anonymous';
+    }
+  } else if (translation.rejected) {
+    if (translation.rejectedUser) {
+      review.vars.user = translation.rejectedUser;
+      review.id = 'history-translation--rejected';
+    } else {
+      review.id = 'history-translation--rejected-anonymous';
+    }
   }
 
   const commentCount = translation.comments?.length ?? 0;
@@ -255,11 +252,13 @@ export function HistoryTranslationBase({
           onClick={copyTranslationIntoEditor}
         >
           <div className='avatar-container'>
-            <UserAvatar
-              username={translation.username}
-              title={approvalTitle}
-              imageUrl={translation.userGravatarUrlSmall}
-            />
+            <Localized {...review}>
+              <UserAvatar
+                username={translation.username}
+                title=''
+                imageUrl={translation.userGravatarUrlSmall}
+              />
+            </Localized>
             {translation.machinerySources ? (
               <Localized
                 id='history-Translation--span-copied'
@@ -278,7 +277,9 @@ export function HistoryTranslationBase({
           <div className='content'>
             <header className='clearfix'>
               <div className='info'>
-                <User title={approvalTitle} translation={translation} />
+                <Localized {...review}>
+                  <User title='' translation={translation} />
+                </Localized>
                 <ReactTimeAgo
                   dir='ltr'
                   date={new Date(translation.dateIso)}

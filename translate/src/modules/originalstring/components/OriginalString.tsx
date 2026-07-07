@@ -9,8 +9,8 @@ import { TermType } from '~/api/terminology';
 import { EditorActions } from '~/context/Editor';
 
 import { EntityView } from '~/context/EntityView';
-import { Highlight } from '~/core/placeable/components/Highlight';
-import type { TermState } from '~/core/term';
+import { Highlight } from '~/modules/placeable/components/Highlight';
+import type { TermState } from '~/modules/terms';
 import { useReadonlyEditor } from '~/hooks/useReadonlyEditor';
 import { parseEntry, requiresSourceView } from '~/utils/message';
 import { editMessageEntry } from '~/utils/message/editMessageEntry';
@@ -103,7 +103,7 @@ function InnerOriginalString({
     if (entry && !requiresSourceView(entry)) {
       const msg = editMessageEntry(entry);
       if (msg.length === 1) {
-        source = msg[0].value;
+        source = msg[0].handle.current.value;
         // fallthrough
       } else {
         return <RichString message={msg} onClick={onClick} terms={terms} />;

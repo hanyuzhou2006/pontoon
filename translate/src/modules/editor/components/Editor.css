@@ -1,0 +1,7 @@
+.editor {
+  background: rgb(39, 42, 47);
+  border-bottom: 1px solid #5e6475;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
